@@ -107,6 +107,7 @@ core = 7.x
 engine = phptemplate
 stylesheets[all][] = css/fonts.css
 stylesheets[all][] = css/styles.css
+stylesheets[all][] = css/sirec.css
 stylesheets[all][] = css/drupal-interno.css
 regions[content] = Contenido
 """

@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 74'%3E%3Cpath d='M32 3 60 12v26c0 18-13 29-28 33C17 67 4 56 4 38V12Z' fill='%230a2a66' stroke='%23f6b11f' stroke-width='4'/%3E%3Ccircle cx='32' cy='26' r='8' fill='%23f6b11f'/%3E%3Cpath d='M13 52 28 31 38 45 45 36 53 52Z' fill='%239bd60d'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./css/fonts.css">
   <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/sirec.css">
   <script type="importmap">
   {
     "imports": {
@@ -329,8 +330,8 @@
           <h2 id="hero-titulo" class="hero-title" data-anim="hero-item">Tu municipalidad,<br>en línea y protegida</h2>
           <p class="hero-lead" data-anim="hero-item">Trámites, pagos y transparencia para los vecinos de Soke, sin filas y sin papeleo.</p>
           <div class="hero-btns" data-anim="hero-item">
-            <a href="#servicios" class="btn btn-primary">Pagar un servicio</a>
-            <a href="#transparencia" class="btn btn-secondary">Solicitar información</a>
+            <a href="#tramites" class="btn btn-primary" data-sirec-open="orden">Pagar un servicio</a>
+            <a href="#tramites" class="btn btn-secondary" data-sirec-open="laip">Solicitar información</a>
           </div>
           <div class="hero-meta" data-anim="hero-item">
             <span class="hero-meta-item">
@@ -369,7 +370,7 @@
         </div>
 
         <div class="serv">
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="multas-pmt">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="multas-pmt" data-sirec-open="orden" data-sirec-concepto="multa">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <rect x="5" y="3" width="14" height="18" rx="2"/>
@@ -377,10 +378,10 @@
               </svg>
             </span>
             <span class="tile-title">Multas PMT</span>
-            <span class="tile-desc">Consulta por placa y pago en línea</span>
+            <span class="tile-desc">Genera orden de pago por boleta</span>
           </a>
 
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="agua-empasoke">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="agua-empasoke" data-sirec-open="orden" data-sirec-concepto="agua">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9Z"/>
@@ -391,7 +392,7 @@
             <span class="tile-desc">Recibo mensual y saldo de canon</span>
           </a>
 
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="boleto-ornato">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="boleto-ornato" data-sirec-open="orden" data-sirec-concepto="ornato">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <path d="M6 3h9l3 3v15H6Z"/>
@@ -403,7 +404,7 @@
             <span class="tile-desc">Emisión digital y verificación anual</span>
           </a>
 
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="iusi">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="iusi" data-sirec-open="iusi">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <path d="M4 11 12 4l8 7"/>
@@ -415,7 +416,7 @@
             <span class="tile-desc">Estado de cuenta y pago trimestral</span>
           </a>
 
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="licencias">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="licencias" data-sirec-open="orden" data-sirec-notice="Las licencias de construcción y uso de suelo se gestionan en ventanilla presencial (lunes a viernes, 8:00–16:00). Aquí puedes consultar IUSI, generar órdenes de pago o presentar una solicitud LAIP.">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <rect x="4" y="4" width="16" height="16" rx="2"/>
@@ -426,7 +427,7 @@
             <span class="tile-desc">Construcción, rótulos y uso de suelo</span>
           </a>
 
-          <a href="#servicios" class="tile" data-anim="service-card" data-service="expedientes-web">
+          <a href="#tramites" class="tile" data-anim="service-card" data-service="expedientes-web" data-sirec-open="seguimiento">
             <span class="ic" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <path d="M6 3h8l4 4v14H6Z"/>
@@ -435,8 +436,175 @@
               </svg>
             </span>
             <span class="tile-title">Expedientes Web</span>
-            <span class="tile-desc">Seguimiento a gestiones en trámite</span>
+            <span class="tile-desc">Seguimiento por folio a solicitudes LAIP</span>
           </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Region: tramites -->
+    <section id="tramites" class="sec sec-tramites" aria-labelledby="tit-tramites" data-region="tramites">
+      <div class="wrap">
+        <div class="sec-head" data-anim="section-head">
+          <h2 id="tit-tramites" class="sec-title">Ventanilla de trámites en línea</h2>
+          <p class="sec-sub">Consulta tu IUSI, genera órdenes de pago para agencia bancaria y da seguimiento a solicitudes de información pública.</p>
+          <div class="rule" aria-hidden="true"></div>
+        </div>
+
+        <div id="sirec-status" class="sirec-status" data-status="loading" role="status" aria-live="polite">
+          <span class="sirec-status-indicator" aria-hidden="true"></span>
+          <span id="sirec-status-text" class="sirec-status-text">Verificando conexión con SIREC…</span>
+          <span id="sirec-mock-badge" class="sirec-mock-badge" hidden>Modo de prueba</span>
+          <button type="button" id="sirec-status-retry" class="sirec-status-retry" hidden>Reintentar</button>
+        </div>
+
+        <div id="sirec-notice" class="sirec-notice" role="status" aria-live="polite" hidden></div>
+
+        <div class="sirec-shell">
+          <div class="sirec-tabs" role="tablist" aria-label="Trámites en línea SIREC">
+            <button type="button" id="tab-iusi" class="sirec-tab" role="tab" aria-selected="true" aria-controls="panel-iusi" data-sirec-tab="iusi" tabindex="0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 11 12 4l8 7"/>
+                <path d="M6 10v10h12V10"/>
+                <rect x="10" y="13" width="4" height="7"/>
+              </svg>
+              <span>Consulta tu IUSI</span>
+            </button>
+
+            <button type="button" id="tab-orden" class="sirec-tab" role="tab" aria-selected="false" aria-controls="panel-orden" data-sirec-tab="orden" tabindex="-1">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/>
+                <path d="M9 8h6M9 12h6M9 16h4"/>
+              </svg>
+              <span>Orden de pago</span>
+            </button>
+
+            <button type="button" id="tab-laip" class="sirec-tab" role="tab" aria-selected="false" aria-controls="panel-laip" data-sirec-tab="laip" tabindex="-1">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/>
+                <path d="M14 3v6h6"/>
+                <path d="M8 13h8M8 17h5"/>
+              </svg>
+              <span>Solicitud LAIP</span>
+            </button>
+
+            <button type="button" id="tab-seguimiento" class="sirec-tab" role="tab" aria-selected="false" aria-controls="panel-seguimiento" data-sirec-tab="seguimiento" tabindex="-1">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m20 20-3.5-3.5"/>
+                <path d="m8.5 11 1.7 1.7 3.3-3.4"/>
+              </svg>
+              <span>Seguimiento LAIP</span>
+            </button>
+          </div>
+
+          <div id="panel-iusi" class="sirec-panel" role="tabpanel" aria-labelledby="tab-iusi" data-sirec-panel="iusi">
+            <h3 class="sirec-panel-title">Consulta tu estado de cuenta IUSI</h3>
+            <p class="sirec-panel-desc">Revisa el valor fiscal, el impuesto anual, el detalle por trimestre y el saldo pendiente de tu inmueble.</p>
+            <form id="form-iusi" class="sirec-form sirec-form--inline" novalidate>
+              <div class="sirec-field">
+                <label for="iusi-finca">Número de finca <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="iusi-finca" name="finca" required autocomplete="off" placeholder="Ej. F-1024" aria-describedby="iusi-finca-hint iusi-finca-error">
+                <p id="iusi-finca-hint" class="field-hint">Formato: F- seguido de 4 o 5 dígitos (por ejemplo, F-1024).</p>
+                <p id="iusi-finca-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-form-actions">
+                <button type="submit" id="btn-iusi-submit" class="btn sirec-btn-primary">Consultar IUSI</button>
+              </div>
+            </form>
+            <div id="iusi-resultado" class="sirec-result" aria-live="polite" aria-busy="false">
+              <div class="sirec-state sirec-state--empty">
+                <p class="sirec-state-msg">Ingresa tu número de finca para consultar tu estado de cuenta del IUSI.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-orden" class="sirec-panel" role="tabpanel" aria-labelledby="tab-orden" data-sirec-panel="orden" hidden>
+            <h3 class="sirec-panel-title">Generar orden de pago</h3>
+            <p class="sirec-panel-desc">Emite tu boleta para pagar en agencias bancarias autorizadas. Este portal no solicita datos de tarjeta ni procesa pagos en línea.</p>
+            <form id="form-orden" class="sirec-form" novalidate>
+              <div class="sirec-field">
+                <label for="orden-concepto">Concepto de pago <span class="req" aria-hidden="true">*</span></label>
+                <select id="orden-concepto" name="concepto" required aria-describedby="orden-concepto-error">
+                  <option value="iusi">IUSI (Impuesto Único Sobre Inmuebles)</option>
+                  <option value="ornato">Boleto de Ornato</option>
+                  <option value="agua">Agua potable (EMPASOKE)</option>
+                  <option value="multa">Multa de tránsito (PMT)</option>
+                </select>
+                <p id="orden-concepto-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-field">
+                <label id="orden-referencia-label" for="orden-referencia">Número de finca <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="orden-referencia" name="referencia" required autocomplete="off" placeholder="Ej. F-1024" aria-describedby="orden-referencia-hint orden-referencia-error">
+                <p id="orden-referencia-hint" class="field-hint">Ingresa tu número de finca con formato F-#### o F-#####.</p>
+                <p id="orden-referencia-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-form-actions sirec-field--full">
+                <button type="submit" id="btn-orden-submit" class="btn sirec-btn-primary">Generar orden de pago</button>
+              </div>
+            </form>
+            <div id="orden-resultado" class="sirec-result" aria-live="polite" aria-busy="false">
+              <div class="sirec-state sirec-state--empty">
+                <p class="sirec-state-msg">Elige el concepto, ingresa tu referencia y genera tu orden de pago lista para imprimir y presentar en agencia.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-laip" class="sirec-panel" role="tabpanel" aria-labelledby="tab-laip" data-sirec-panel="laip" hidden>
+            <h3 class="sirec-panel-title">Solicitud de información pública (LAIP)</h3>
+            <p class="sirec-panel-desc">Presenta tu solicitud conforme al Decreto 57-2008. La respuesta se entrega en un plazo de 10 días (Art. 42 LAIP).</p>
+            <form id="form-laip" class="sirec-form" novalidate>
+              <div class="sirec-field">
+                <label for="laip-nombre">Nombre completo <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="laip-nombre" name="nombre" required autocomplete="name" placeholder="Ej. María López" aria-describedby="laip-nombre-error">
+                <p id="laip-nombre-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-field">
+                <label for="laip-correo">Correo electrónico <span class="opt">(opcional)</span></label>
+                <input type="email" id="laip-correo" name="correo" autocomplete="email" placeholder="nombre@correo.ejemplo" aria-describedby="laip-correo-hint laip-correo-error">
+                <p id="laip-correo-hint" class="field-hint">Opcional. Úsalo si deseas dejar un medio de contacto para tu trámite.</p>
+                <p id="laip-correo-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-field sirec-field--full">
+                <label for="laip-descripcion">Descripción de la información solicitada <span class="req" aria-hidden="true">*</span></label>
+                <textarea id="laip-descripcion" name="descripcion" rows="4" required minlength="10" maxlength="2000" placeholder="Indica con claridad qué documento, dato o informe público necesitas consultar." aria-describedby="laip-descripcion-hint laip-descripcion-count laip-descripcion-error"></textarea>
+                <div class="field-meta-row">
+                  <p id="laip-descripcion-hint" class="field-hint">Mínimo 10 caracteres, máximo 2,000 caracteres.</p>
+                  <span id="laip-descripcion-count" class="field-counter">0 / 2,000 caracteres</span>
+                </div>
+                <p id="laip-descripcion-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-form-actions sirec-field--full">
+                <button type="submit" id="btn-laip-submit" class="btn sirec-btn-primary">Enviar solicitud</button>
+              </div>
+            </form>
+            <div id="laip-resultado" class="sirec-result" aria-live="polite" aria-busy="false">
+              <div class="sirec-state sirec-state--empty">
+                <p class="sirec-state-msg">Al enviar tu solicitud recibirás un número de folio y la fecha límite de respuesta.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-seguimiento" class="sirec-panel" role="tabpanel" aria-labelledby="tab-seguimiento" data-sirec-panel="seguimiento" hidden>
+            <h3 class="sirec-panel-title">Seguimiento de solicitud LAIP</h3>
+            <p class="sirec-panel-desc">Consulta el estado actual y los días restantes de respuesta con tu número de folio.</p>
+            <form id="form-seguimiento" class="sirec-form sirec-form--inline" novalidate>
+              <div class="sirec-field">
+                <label for="seguimiento-folio">Número de folio <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="seguimiento-folio" name="folio" required autocomplete="off" placeholder="Ej. LAIP-2026-0140" aria-describedby="seguimiento-folio-hint seguimiento-folio-error">
+                <p id="seguimiento-folio-hint" class="field-hint">Ingresa el folio recibido al presentar tu solicitud (por ejemplo, LAIP-2026-0140).</p>
+                <p id="seguimiento-folio-error" class="field-error" role="alert" hidden></p>
+              </div>
+              <div class="sirec-form-actions">
+                <button type="submit" id="btn-seguimiento-submit" class="btn sirec-btn-primary">Consultar seguimiento</button>
+              </div>
+            </form>
+            <div id="seguimiento-resultado" class="sirec-result" aria-live="polite" aria-busy="false">
+              <div class="sirec-state sirec-state--empty">
+                <p class="sirec-state-msg">Escribe tu folio LAIP para verificar el estado de tu gestión.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -633,7 +801,7 @@
             </a>
           </li>
           <li data-anim="transp-item">
-            <a href="#transparencia">
+            <a href="#tramites" data-sirec-open="laip">
               <span class="dot" aria-hidden="true"></span>
               <span class="tlist-label">Solicitud de información pública</span>
               <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -668,10 +836,10 @@
       <div class="footer-col">
         <h3>Servicios</h3>
         <ul class="footer-list">
-          <li><a href="#servicios">Multas PMT</a></li>
-          <li><a href="#servicios">Agua EMPASOKE</a></li>
-          <li><a href="#servicios">Boleto de Ornato</a></li>
-          <li><a href="#servicios">IUSI</a></li>
+          <li><a href="#tramites" data-sirec-open="orden" data-sirec-concepto="multa">Multas PMT</a></li>
+          <li><a href="#tramites" data-sirec-open="orden" data-sirec-concepto="agua">Agua EMPASOKE</a></li>
+          <li><a href="#tramites" data-sirec-open="orden" data-sirec-concepto="ornato">Boleto de Ornato</a></li>
+          <li><a href="#tramites" data-sirec-open="iusi">IUSI</a></li>
           <li><a href="#servicios">Licencias</a></li>
         </ul>
       </div>

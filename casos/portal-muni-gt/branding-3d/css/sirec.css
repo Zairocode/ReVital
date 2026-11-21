@@ -1,0 +1,1199 @@
+/* ==========================================================================
+   MuniSoke GT · Ventanilla de Trámites en Línea (SIREC)
+   Estilos institucionales 100 % offline · WCAG 2.2 AA en tema claro y oscuro
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Tokens semánticos SIREC (Tema Claro por defecto + Tema Oscuro)
+   -------------------------------------------------------------------------- */
+:root {
+  --sirec-input-bg: #ffffff;
+  --sirec-disabled-bg: #566885;
+  --sirec-disabled-ink: #ffffff;
+
+  /* Errores (WCAG AA >= 4.5:1) */
+  --sirec-error-text: #b42318;
+  --sirec-error-ink: #9a1c15;
+  --sirec-error-bg: #fdeceb;
+  --sirec-error-border: #c93126;
+  --sirec-error-input-bg: #fff8f7;
+
+  /* Éxito / en línea */
+  --sirec-success-ink: #0a5a32;
+  --sirec-success-bg: #e4f6ec;
+  --sirec-success-border: #128a4e;
+
+  /* Aviso informativo / recibida */
+  --sirec-info-ink: #0a2a66;
+  --sirec-info-bg: #e8f0fe;
+  --sirec-info-border: #1452c9;
+
+  /* Pendiente / en trámite / modo prueba */
+  --sirec-warn-ink: #734400;
+  --sirec-warn-bg: #fff4d6;
+  --sirec-warn-border: #c48200;
+
+  /* Prorrogada */
+  --sirec-indigo-ink: #4a2574;
+  --sirec-indigo-bg: #f2ebfc;
+  --sirec-indigo-border: #7642b5;
+
+  /* Chevron SVG inline para <select> */
+  --sirec-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2325324a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] {
+  --sirec-input-bg: #131c2e;
+  --sirec-disabled-bg: #344666;
+  --sirec-disabled-ink: #dbe6fa;
+
+  --sirec-error-text: #ff9b96;
+  --sirec-error-ink: #ffaba5;
+  --sirec-error-bg: #3f1718;
+  --sirec-error-border: #f06a62;
+  --sirec-error-input-bg: #261926;
+
+  --sirec-success-ink: #8ef0b9;
+  --sirec-success-bg: #113524;
+  --sirec-success-border: #4ad08a;
+
+  --sirec-info-ink: #b6d0ff;
+  --sirec-info-bg: #172b52;
+  --sirec-info-border: #7aa7ff;
+
+  --sirec-warn-ink: #ffd670;
+  --sirec-warn-bg: #3a2b0d;
+  --sirec-warn-border: #f6b11f;
+
+  --sirec-indigo-ink: #d9baff;
+  --sirec-indigo-bg: #2d1b47;
+  --sirec-indigo-border: #b182f5;
+
+  --sirec-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d3dcee' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------------------
+   2. Region: tramites (Superficie y barra discreta de estado SIREC)
+   -------------------------------------------------------------------------- */
+.sec-tramites {
+  background-color: var(--surface-subtle);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sec-tramites h4 {
+  font-family: var(--font-head);
+  color: var(--text-strong);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.sec-tramites select,
+.sec-tramites textarea {
+  font: inherit;
+}
+
+/* Indicador discreto de conexión SIREC */
+.sirec-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-width: 960px;
+  margin: 0 auto 18px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--text-body);
+}
+
+.sirec-status-indicator {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: background-color 0.2s ease, transform 0.2s ease, border-radius 0.2s ease;
+}
+
+.sirec-status[data-status="loading"] .sirec-status-indicator {
+  background-color: transparent;
+  border: 2px solid var(--accent-link);
+  border-top-color: transparent;
+  animation: sirec-spin 0.9s linear infinite;
+}
+
+.sirec-status[data-status="online"] {
+  border-color: var(--sirec-success-border);
+}
+
+.sirec-status[data-status="online"] .sirec-status-indicator {
+  background-color: var(--sirec-success-border);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sirec-success-border) 24%, transparent);
+}
+
+.sirec-status[data-status="online"] .sirec-status-text {
+  color: var(--sirec-success-ink);
+  font-weight: 600;
+}
+
+.sirec-status[data-status="offline"] {
+  border-color: var(--sirec-error-border);
+}
+
+/* Forma de rombo para no depender únicamente del color en estado fuera de línea */
+.sirec-status[data-status="offline"] .sirec-status-indicator {
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background-color: var(--sirec-error-border);
+}
+
+.sirec-status[data-status="offline"] .sirec-status-text {
+  color: var(--sirec-error-text);
+  font-weight: 600;
+}
+
+.sirec-status-text {
+  flex: 1 1 200px;
+  min-width: 0;
+  color: var(--text-muted);
+}
+
+.sirec-mock-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: var(--sirec-warn-bg);
+  color: var(--sirec-warn-ink);
+  border: 1px solid var(--sirec-warn-border);
+  font-family: var(--font-head);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sirec-status-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-control);
+  background-color: var(--surface-subtle);
+  color: var(--accent-primary);
+  font-family: var(--font-head);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.sirec-status-retry:hover {
+  background-color: var(--surface-tint);
+  border-color: var(--accent-link);
+}
+
+/* Aviso contextual opcional (p. ej. enlace de Licencias) */
+.sirec-notice {
+  max-width: 960px;
+  margin: 0 auto 18px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background-color: var(--sirec-info-bg);
+  border: 1px solid var(--sirec-info-border);
+  border-left: 4px solid var(--sirec-info-border);
+  color: var(--sirec-info-ink);
+  font-size: 0.91rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   3. Contenedor principal (.sirec-shell) y barra de pestañas WAI-ARIA
+   -------------------------------------------------------------------------- */
+.sirec-shell {
+  max-width: 960px;
+  margin-inline: auto;
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.sirec-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px 10px 0;
+  background-color: var(--surface-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sirec-tab,
+.sirec-tabs [role="tab"] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background-color: transparent;
+  color: var(--text-body);
+  font-family: var(--font-head);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.sirec-tab svg,
+.sirec-tabs [role="tab"] svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.sirec-tab:hover,
+.sirec-tabs [role="tab"]:hover {
+  background-color: var(--surface-tint);
+  color: var(--accent-primary);
+}
+
+.sirec-tab[aria-selected="true"],
+.sirec-tabs [role="tab"][aria-selected="true"] {
+  background-color: var(--surface);
+  color: var(--accent-primary);
+  border-color: var(--border-subtle);
+  margin-bottom: -1px;
+  padding-bottom: 12px;
+  font-weight: 800;
+  box-shadow: inset 0 3px 0 var(--brand-civic);
+}
+
+:root[data-theme="dark"] .sirec-tab[aria-selected="true"],
+:root[data-theme="dark"] .sirec-tabs [role="tab"][aria-selected="true"] {
+  color: var(--text-strong);
+  box-shadow: inset 0 3px 0 var(--brand-lime);
+}
+
+.sirec-tab:focus-visible,
+.sirec-tabs [role="tab"]:focus-visible {
+  z-index: 2;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+/* --------------------------------------------------------------------------
+   4. Paneles y formularios accesibles
+   -------------------------------------------------------------------------- */
+.sirec-panel {
+  padding: clamp(20px, 3.2vw, 34px);
+}
+
+.sirec-panel-title {
+  font-family: var(--font-head);
+  font-size: clamp(1.2rem, 2.2vw, 1.48rem);
+  font-weight: 800;
+  color: var(--accent-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.sirec-panel-desc {
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  max-width: 68ch;
+  margin-bottom: 22px;
+}
+
+.sirec-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+  align-items: start;
+}
+
+.sirec-form--inline {
+  grid-template-columns: minmax(0, 440px) auto;
+}
+
+.sirec-form--inline .sirec-form-actions {
+  margin-top: 1.65em;
+}
+
+.sirec-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sirec-field--full {
+  grid-column: 1 / -1;
+}
+
+.sirec-field label {
+  font-family: var(--font-head);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.35;
+}
+
+.sirec-field .req {
+  color: var(--sirec-error-text);
+  font-weight: 800;
+  margin-left: 2px;
+}
+
+.sirec-field .opt {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.sirec-field input,
+.sirec-field select,
+.sirec-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-control);
+  background-color: var(--sirec-input-bg);
+  color: var(--text-strong);
+  font-size: 0.96rem;
+  line-height: 1.45;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sirec-field input::placeholder,
+.sirec-field textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.sirec-field select {
+  appearance: none;
+  padding-right: 40px;
+  background-image: var(--sirec-select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+.sirec-field textarea {
+  min-height: 118px;
+  resize: vertical;
+}
+
+.sirec-field input:hover,
+.sirec-field select:hover,
+.sirec-field textarea:hover {
+  border-color: var(--accent-primary);
+}
+
+.sirec-field input:focus-visible,
+.sirec-field select:focus-visible,
+.sirec-field textarea:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--focus-ring);
+}
+
+.sirec-field.has-error input,
+.sirec-field.has-error select,
+.sirec-field.has-error textarea,
+.sirec-field input[aria-invalid="true"],
+.sirec-field select[aria-invalid="true"],
+.sirec-field textarea[aria-invalid="true"] {
+  border-color: var(--sirec-error-border);
+  background-color: var(--sirec-error-input-bg);
+}
+
+.field-hint {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.field-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.field-counter {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sirec-field.has-error .field-counter,
+.field-counter.is-over-limit {
+  color: var(--sirec-error-text);
+  font-weight: 700;
+}
+
+.field-error {
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--sirec-error-text);
+}
+
+.sirec-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Botones SIREC (Primario, Secundario y Ghost)
+   -------------------------------------------------------------------------- */
+.sirec-btn-primary,
+.sirec-btn-secondary,
+.sirec-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s var(--ease-civic), background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.2s ease;
+}
+
+.sirec-btn-primary svg,
+.sirec-btn-secondary svg,
+.sirec-btn-ghost svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.sirec-btn-primary {
+  background-color: var(--brand-civic);
+  color: #ffffff;
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.sirec-btn-primary:hover:not(:disabled) {
+  background-color: var(--brand-navy);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+:root[data-theme="dark"] .sirec-btn-primary:hover:not(:disabled) {
+  background-color: var(--brand-navy);
+  border-color: var(--accent-primary);
+}
+
+.sirec-btn-primary:disabled,
+.sirec-btn-secondary:disabled,
+.sirec-btn-ghost:disabled {
+  background-color: var(--sirec-disabled-bg);
+  color: var(--sirec-disabled-ink);
+  border-color: transparent;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.sirec-btn-secondary {
+  background-color: var(--surface);
+  color: var(--brand-navy);
+  border: 2px solid var(--brand-civic);
+}
+
+.sirec-btn-secondary:hover:not(:disabled) {
+  background-color: var(--surface-tint);
+  border-color: var(--brand-navy);
+  transform: translateY(-2px);
+}
+
+:root[data-theme="dark"] .sirec-btn-secondary {
+  background-color: var(--surface-tint);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+:root[data-theme="dark"] .sirec-btn-secondary:hover:not(:disabled) {
+  background-color: #2b3f63;
+  color: var(--text-strong);
+}
+
+.sirec-btn-ghost {
+  background-color: transparent;
+  color: var(--accent-link);
+  border: 1.5px solid var(--border-control);
+}
+
+.sirec-btn-ghost:hover:not(:disabled) {
+  background-color: var(--surface-subtle);
+  border-color: var(--accent-link);
+  color: var(--accent-link-hover);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   6. Área de resultados y estados (vacío, cargando, error, éxito)
+   -------------------------------------------------------------------------- */
+.sirec-result {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sirec-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.sirec-state--empty {
+  background-color: var(--surface-subtle);
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.sirec-state--loading {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--surface-subtle);
+  color: var(--text-body);
+}
+
+.sirec-state--error {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: var(--sirec-error-bg);
+  border-color: var(--sirec-error-border);
+  color: var(--sirec-error-ink);
+}
+
+.sirec-state--success {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: var(--sirec-success-bg);
+  border-color: var(--sirec-success-border);
+  color: var(--sirec-success-ink);
+}
+
+.sirec-state--error > svg,
+.sirec-state--success > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.sirec-state-title {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 800;
+  color: inherit;
+  margin: 0;
+}
+
+.sirec-state-msg {
+  font-size: 0.93rem;
+  line-height: 1.5;
+  color: inherit;
+}
+
+.sirec-spinner {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent-link);
+  animation: sirec-spin 0.8s linear infinite;
+}
+
+@keyframes sirec-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Tarjeta de resultados, lista de definición, saldo y acciones
+   -------------------------------------------------------------------------- */
+.sirec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(18px, 2.5vw, 24px);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.sirec-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sirec-card-head h4 {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+}
+
+.sirec-dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.sirec-dl > div {
+  min-width: 0;
+}
+
+.sirec-dl dt {
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.sirec-dl dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.sirec-amount {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sirec-dl .sirec-saldo-box {
+  grid-column: 1 / -1;
+}
+
+.sirec-dl .sirec-saldo-box dt {
+  margin-bottom: 0;
+}
+
+.sirec-saldo-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+}
+
+.sirec-saldo-box dd,
+.sirec-saldo-box .sirec-amount {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+  color: var(--accent-primary);
+}
+
+.sirec-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+/* --------------------------------------------------------------------------
+   8. Tabla de trimestres IUSI
+   -------------------------------------------------------------------------- */
+.sirec-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.sirec-table {
+  width: 100%;
+  min-width: 440px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.sirec-table caption {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: var(--font-head);
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text-strong);
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sirec-table thead th {
+  background-color: var(--surface-subtle);
+  color: var(--text-strong);
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.sirec-table tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+  vertical-align: middle;
+}
+
+.sirec-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sirec-table .is-num,
+.sirec-table .sirec-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sirec-table thead th.is-num {
+  text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   9. Badges de estado semánticos (ícono + texto, WCAG 2.2 AA en ambos temas)
+   -------------------------------------------------------------------------- */
+.sirec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: var(--font-head);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sirec-badge svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.sirec-badge--pagado,
+.sirec-badge--resuelta {
+  color: var(--sirec-success-ink);
+  background-color: var(--sirec-success-bg);
+  border-color: var(--sirec-success-border);
+}
+
+.sirec-badge--pendiente,
+.sirec-badge--en_tramite {
+  color: var(--sirec-warn-ink);
+  background-color: var(--sirec-warn-bg);
+  border-color: var(--sirec-warn-border);
+}
+
+.sirec-badge--vencido {
+  color: var(--sirec-error-ink);
+  background-color: var(--sirec-error-bg);
+  border-color: var(--sirec-error-border);
+}
+
+.sirec-badge--recibida {
+  color: var(--sirec-info-ink);
+  background-color: var(--sirec-info-bg);
+  border-color: var(--sirec-info-border);
+}
+
+.sirec-badge--prorrogada {
+  color: var(--sirec-indigo-ink);
+  background-color: var(--sirec-indigo-bg);
+  border-color: var(--sirec-indigo-border);
+}
+
+/* --------------------------------------------------------------------------
+   10. Comprobante de Orden de Pago (.sirec-voucher)
+   -------------------------------------------------------------------------- */
+.sirec-voucher {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(18px, 2.8vw, 26px);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  border: 1.5px solid var(--border-control);
+  border-top: 4px solid var(--brand-navy);
+  box-shadow: var(--shadow-sm);
+}
+
+:root[data-theme="dark"] .sirec-voucher {
+  border-top-color: var(--brand-lime);
+}
+
+.sirec-voucher-print-head {
+  display: none;
+}
+
+.sirec-voucher-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--border-control);
+}
+
+.sirec-voucher-label {
+  display: block;
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.sirec-voucher-code {
+  display: block;
+  font-family: var(--font-head);
+  font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: var(--accent-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.sirec-voucher-amount {
+  display: block;
+  font-family: var(--font-head);
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 900;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.sirec-voucher-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.sirec-voucher-meta > div {
+  min-width: 0;
+}
+
+.sirec-voucher-meta dt {
+  font-family: var(--font-head);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.sirec-voucher-meta dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.sirec-voucher-note {
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--brand-gold);
+  color: var(--text-body);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   11. Responsive (820px, 680px, 480px · cero overflow en 360px / 768px / 1366px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 820px) {
+  .sirec-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .sirec-tab,
+  .sirec-tabs [role="tab"] {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background-color: var(--surface);
+    padding: 10px;
+    font-size: 0.84rem;
+  }
+
+  .sirec-tab[aria-selected="true"],
+  .sirec-tabs [role="tab"][aria-selected="true"] {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    border-color: var(--brand-civic);
+    box-shadow: inset 0 3px 0 var(--brand-civic), var(--shadow-sm);
+  }
+
+  :root[data-theme="dark"] .sirec-tab[aria-selected="true"],
+  :root[data-theme="dark"] .sirec-tabs [role="tab"][aria-selected="true"] {
+    border-color: var(--accent-primary);
+    box-shadow: inset 0 3px 0 var(--brand-lime);
+  }
+
+  .sirec-dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .sirec-form,
+  .sirec-form--inline {
+    grid-template-columns: 1fr;
+  }
+
+  .sirec-form--inline .sirec-form-actions {
+    margin-top: 0;
+  }
+
+  .sirec-form-actions .btn,
+  .sirec-actions .btn,
+  .sirec-actions .sirec-btn-primary,
+  .sirec-actions .sirec-btn-secondary,
+  .sirec-actions .sirec-btn-ghost {
+    width: 100%;
+  }
+
+  .sirec-voucher-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .sirec-panel {
+    padding: 18px 14px;
+  }
+
+  .sirec-tab,
+  .sirec-tabs [role="tab"] {
+    gap: 6px;
+    padding: 10px 8px;
+    font-size: 0.8rem;
+  }
+
+  .sirec-dl {
+    grid-template-columns: 1fr;
+  }
+
+  .sirec-status {
+    padding: 10px 12px;
+  }
+
+  .sirec-status-retry {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. Preferencia de movimiento reducido (WCAG 2.2)
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .sirec-spinner,
+  .sirec-status[data-status="loading"] .sirec-status-indicator {
+    animation: none !important;
+    border-color: var(--accent-link);
+    border-style: dotted;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   13. Hoja de impresión (@media print · Comprobante de Orden de Pago)
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0e1726 !important;
+  }
+
+  .util,
+  .site-header,
+  .site-nav,
+  #inicio,
+  #servicios,
+  #cifras,
+  #noticias,
+  #transparencia,
+  .site-footer,
+  .skip-link,
+  .sec-tramites .sec-head,
+  .sirec-status,
+  .sirec-notice,
+  .sirec-tabs,
+  .sirec-form,
+  .sirec-panel-title,
+  .sirec-panel-desc,
+  #btn-orden-imprimir,
+  .no-print,
+  [hidden] {
+    display: none !important;
+  }
+
+  .demo-bar {
+    display: block !important;
+    background: #ffffff !important;
+    color: #0e1726 !important;
+    border: 1.5px solid #0a2a66 !important;
+    margin-bottom: 14px;
+  }
+
+  .sec-tramites,
+  .sec-tramites .wrap,
+  .sirec-shell,
+  .sirec-panel,
+  .sirec-result {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  #orden-comprobante,
+  .sirec-voucher {
+    display: flex !important;
+    background: #ffffff !important;
+    color: #0e1726 !important;
+    border: 2px solid #0a2a66 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+    break-inside: avoid;
+  }
+
+  .sirec-voucher-print-head {
+    display: block !important;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #0a2a66;
+    font-family: var(--font-head);
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #0a2a66 !important;
+    letter-spacing: 0.01em;
+  }
+
+  .sirec-voucher-print-head strong,
+  .sirec-voucher-print-head span {
+    display: block;
+  }
+
+  .sirec-voucher-print-head span {
+    font-family: var(--font-body);
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #25324a !important;
+    margin-top: 3px;
+  }
+
+  .sirec-voucher-code,
+  .sirec-voucher-amount,
+  .sirec-voucher-meta dd {
+    color: #0e1726 !important;
+  }
+
+  .sirec-voucher-label,
+  .sirec-voucher-meta dt {
+    color: #25324a !important;
+  }
+
+  .sirec-voucher-note {
+    background: #ffffff !important;
+    color: #0e1726 !important;
+    border: 1px solid #0a2a66 !important;
+    border-left: 4px solid #0a2a66 !important;
+  }
+}
