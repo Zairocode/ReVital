@@ -63,9 +63,20 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
     """-> dict con componentes, hallazgos (confirmados), condicionales, posibles, eol y pendientes."""
     kev, nvd, idx = catalogo["kev"], catalogo["nvd"], catalogo["indice"]
     res = {"componentes": componentes(inventarios, alias), "hallazgos": [], "condicionales": [],
-           "posibles": [], "eol": [], "sin_version": [], "sin_mapeo": []}
+           "posibles": [], "eol": [], "configuracion": configuracion(inventarios, reglas), "notas_colectores": [],
+           "sin_version": [], "sin_mapeo": []}
+    res["notas_colectores"] = [c for c in res["configuracion"] if c["tipo"] == "nota"]
+    res["configuracion"] = [c for c in res["configuracion"] if c["tipo"] != "nota"]
+    protocolos = reglas.get("protocolos_obsoletos", {})
     for comp in res["componentes"]:
         ver = comp["version"]
+        proto = protocolos.get(normalizar.clave(comp["producto"]), {})
+        if proto:  # 'TLS 1.0' no es software con CVE: es un protocolo inseguro que el servidor acepta
+            if ver in proto:
+                res["configuracion"].append({"tipo": "Protocolo obsoleto",
+                                             "detalle": "El servidor acepta %s %s" % (comp["producto"], ver),
+                                             "recomendacion": proto[ver], "evidencia": comp["evidencia"]})
+            continue
         if not comp["cpe"]:
             res["sin_mapeo"].append(comp)
             continue
@@ -108,6 +119,23 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
     for k in ("hallazgos", "condicionales", "posibles"):
         res[k].sort(key=orden)
     return res
+
+
+def configuracion(inventarios, reglas):
+    """Alertas de configuracion que los colectores dejan en extra.alertas (ej. web.config con debug=true)."""
+    out, recs, notas = [], reglas.get("alertas", {}), reglas.get("notas_colector", [])
+    for inv in inventarios:
+        for a in (inv.get("extra") or {}).get("alertas", []) or []:
+            low = a.lower()
+            ev = [{"kind": inv.get("kind", ""), "target": inv.get("target", ""),
+                   "fuente": "colector " + inv.get("kind", ""), "donde": inv.get("target", "")}]
+            tipo = "nota" if any(n in low for n in notas) else "Configuracion insegura"
+            rec = next((r for k, r in recs.items() if k in low.replace(" ", "").replace('"', "")
+                        or k in low), "")
+            item = {"tipo": tipo, "detalle": a, "recomendacion": rec, "evidencia": ev}
+            if item not in out:
+                out.append(item)
+    return out
 
 
 def por_entidad(inventarios, entidad=None):

@@ -7,8 +7,8 @@ Lee los `inventario-*.json` de los colectores (web, red, codigo, host), busca qu
 ```
 python -m revital.cves --demo                 # caso portal-muni-gt, sin red: debe terminar en "ok"
 python -m revital.cves --out salida           # lee salida/inventario-*.json -> salida/reporte-<entidad>.md
-python -m revital.cves --out salida --entidad "Muni San Ejemplo"
-python -m revital.cves --actualizar           # baja KEV + NVD a datos/ (requiere internet)
+python -m revital.cves --out salida --entidad MUNI-GT
+python -m revital.cves --actualizar           # opcional: NVD completo de alias.json a datos/ (internet)
 python tests/test_cves.py                     # pruebas
 ```
 
@@ -18,7 +18,7 @@ Salida: `reporte-<entidad>.md` (para el jefe de TI) y `hallazgos-<entidad>.json`
 |---|---|
 | `versiones.py` | Compara versiones como numeros ('10.0' > '9.9', '1.3.3c' > '1.3.3') y revisa rangos de NVD |
 | `normalizar.py` + `alias.json` | Nombre del colector ('Apache', 'Microsoft-IIS') -> CPE de NVD; ramas fuera de soporte |
-| `catalogo.py` | Carga KEV y NVD offline desde `datos/` (o `ejemplos/`); `--actualizar` los descarga |
+| `catalogo.py` | Lee los catalogos del equipo en `catalogos/` (KEV + NVD de KEV) y el extra opcional de `datos/` |
 | `evaluar.py` + `reglas.json` | Une componentes, cruza con NVD/KEV y asigna prioridad; CVE que dependen de configuracion |
 | `reporte.py` | Escribe el `.md` y el `.json` |
 

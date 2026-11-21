@@ -29,9 +29,10 @@ flowchart TD
     K --> I
     H --> I
 
-    subgraph NET["Una sola vez, con internet: --actualizar"]
-        CISA["CISA KEV<br/>JSON público"] --> DK[("datos/kev.json")]
-        NVDAPI["NVD API 2.0<br/>por cada producto de alias.json"] --> DN[("datos/nvd_min.json")]
+    subgraph NET["Con internet, una vez (congelado en el repo)"]
+        CISA["CISA KEV<br/>JSON público"] --> DK[("catalogos/kev.json")]
+        NVDAPI["NVD API 2.0<br/>CVE que están en KEV"] --> DN[("catalogos/nvd-kev.json")]
+        NVDX["NVD API 2.0, opcional<br/>todas las CVE de alias.json"] -.-> DX[("revital/cves/datos/nvd_min.json<br/>solo local")]
     end
 
     subgraph CVES["revital/cves (esta rama, sin internet)"]
@@ -41,12 +42,16 @@ flowchart TD
         KV["4. ¿El CVE está en KEV?"]
         P["5. Prioridad + reglas.json<br/>ransomware, fecha vencida, CVSS, condicionales"]
         E["Fin de soporte<br/>alias.json: eol"]
+        C["Configuración insegura<br/>TLS viejo, alertas de colectores"]
     end
 
     I --> N --> D --> V --> KV --> P
     DN --> V
+    DX -.-> V
     DK --> KV
     D --> E
+    D --> C
+    C --> MD
     P --> MD["salida/reporte-ENTIDAD.md<br/>para el jefe de TI"]
     E --> MD
     P --> JS["salida/hallazgos-ENTIDAD.json<br/>detalle completo"]
@@ -60,8 +65,8 @@ Versión texto (por si el visor no muestra Mermaid):
                         ▼
    1. normalizar   'Apache' / 'apache http_server' ──► apache:http_server   (alias.json)
    2. unir         mismo producto+versión de varias fuentes = 1 fila; 'Drupal 7' se descarta si se sabe 7.57
-   3. versiones    ¿2.4.49 está dentro del rango afectado?                   (datos/nvd_min.json)
-   4. KEV          ¿ese CVE se está explotando?                               (datos/kev.json)
+   3. versiones    ¿2.4.49 está dentro del rango afectado?        (catalogos/nvd-kev.json [+ datos/nvd_min.json])
+   4. KEV          ¿ese CVE se está explotando?                    (catalogos/kev.json)
    5. prioridad    KEV+ransomware > KEV vencido > KEV > CVSS≥9 > CVSS≥7 > resto (reglas.json)
                         │
                         ▼
@@ -75,7 +80,7 @@ Versión texto (por si el visor no muestra Mermaid):
 No leemos nada propio de cada colector. Solo el contrato de `revital/inventory.py`, que se carga con `inventory.cargar_todos("salida")`:
 
 ```json
-{"kind": "web", "target": "http://localhost:8080", "entidad": "Muni San Ejemplo",
+{"kind": "web", "target": "http://localhost:8080", "entidad": "MUNI-GT",
  "components": [{"producto": "Apache", "version": "2.4.49", "fuente": "header server en error 400", "donde": "localhost:8080"}]}
 ```
 
@@ -88,14 +93,17 @@ No leemos nada propio de cada colector. Solo el contrato de `revital/inventory.p
 
 | Fuente | Qué responde | Qué NO trae | Archivo |
 |---|---|---|---|
-| **NVD** (NIST) | Qué versiones afecta cada CVE (CPE + rangos) y qué tan grave es (CVSS) | Si se está explotando | `datos/nvd_min.json` |
-| **CISA KEV** | Qué CVE se explotan activamente, si los usa ransomware, acción requerida y fecha límite | Qué versiones afecta | `datos/kev.json` |
+| **CISA KEV** | Qué CVE se explotan activamente, si los usa ransomware, acción requerida y fecha límite | Qué versiones afecta | `catalogos/kev.json` |
+| **NVD** (NIST), extracto KEV | Qué versiones afecta cada CVE de KEV (CPE + rangos) y su CVSS | Si se está explotando | `catalogos/nvd-kev.json` |
+| **NVD** completo, opcional | Lo mismo para **todas** las CVE de los productos de `alias.json`, no solo KEV (sección 4 del reporte) | — | `revital/cves/datos/nvd_min.json` (local, no se sube) |
+
+Los dos primeros los congeló el equipo en `catalogos/` con `python scripts/actualizar_catalogos.py` (ver `catalogos/LEEME.md`): son **la fuente oficial** y viajan con el repo. El tercero es un extra que cada quien genera con `python -m revital.cves --actualizar` si quiere ver también las CVE que no están en KEV; pesa unos 8 MB y por eso no se sube.
 
 KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD dice "afecta hasta 2.4.48" pero no dice si es urgente. **Juntas responden "¿mi versión tiene algo que se esté explotando hoy?".**
 
-**¿Por qué no una base de datos?** Restricción del proyecto: solo stdlib de Python 3.8, offline, en Windows 7. Son archivos JSON (unos 10 MB en total) que se cargan en memoria en menos de un segundo. Si algún día se quiere todo NVD, el siguiente paso es `sqlite3`, que también es stdlib.
+**¿Por qué no una base de datos?** Restricción del proyecto: solo stdlib de Python 3.8, offline, en Windows 7. Son archivos JSON (unos 3 MB en `catalogos/`) que se cargan en memoria en menos de un segundo. Si algún día se quiere todo NVD, el siguiente paso es `sqlite3`, que también es stdlib.
 
-**Offline:** `--actualizar` se corre una vez en una máquina con internet y la carpeta `datos/` viaja en USB. Si `datos/` está vacía, se usan los catálogos reducidos de `ejemplos/` y el reporte lo avisa arriba.
+**Offline:** los catálogos ya vienen en el repo (`catalogos/`), así que la demo no necesita internet. Si faltara `catalogos/kev.json`, se usan los catálogos reducidos de `ejemplos/` y el reporte lo avisa arriba.
 
 ---
 
@@ -108,6 +116,7 @@ KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD
 | **Versión incompleta = "posible"** | El meta generator dice "Drupal 7"; con eso no se puede confirmar nada. Si otra fuente dio 7.57, se usa esa y la evidencia de "Drupal 7" se une a la fila de 7.57. Si solo hay "7", se listan solo los KEV de la rama como "posibles". |
 | **Sin versión = revisión manual** | No inventamos. Se dice cuántos KEV tiene el producto para que alguien lo revise a mano. |
 | **CVE condicionales aparte** (`reglas.json`) | Algunos CVE solo aplican con cierta configuración que no se ve desde fuera (ej. CVE-2024-38475, reglas de mod_rewrite). Se reportan como "verificar", no como confirmados. |
+| **Configuración insegura** separada de los CVE | `TLS 1.0` o un `web.config` en modo depuración no son software con CVE, pero son riesgos que se corrigen cambiando configuración, sin parche. Antes caían en "sin equivalencia en NVD". |
 | **Fin de soporte (EOL)** separado de los CVE | Un Drupal 7 no recibirá más parches: la recomendación no es "parchar" sino "planificar migración". Importante para gobierno. |
 | **Solo lectura** | Nunca se descargan ni ejecutan exploits; solo se leen catálogos públicos. |
 
@@ -136,9 +145,10 @@ Dentro de cada nivel se ordena por CVSS. Los umbrales están en `reglas.json`. E
 2. **Qué parchear primero:** solo KEV, con motivo, acción requerida por CISA, fecha límite y evidencia.
 3. **Dependen de configuración** (verificar).
 4. **Fuera de soporte** (planificar migración).
-5. **Otras vulnerabilidades** no KEV (las 20 más graves; el resto en el `.json`).
-6. **Revisión manual:** sin versión, versión incompleta, productos sin alias.
-7. **Inventario** completo con fuente y dónde, y el método usado.
+5. **Configuración insegura:** protocolos obsoletos que acepta el servidor (`TLS 1.0/1.1`, que reporta el crawler) y alertas de los colectores (ej. `web.config` con `debug=true` o `customErrors Off`, del colector de código), cada una con su recomendación (`reglas.json`).
+6. **Otras vulnerabilidades** no KEV (las 20 más graves; el resto en el `.json`).
+7. **Revisión manual:** sin versión, versión incompleta, productos sin alias y avisos de cobertura de los colectores.
+8. **Inventario** completo con fuente y dónde, y el método usado.
 
 `salida/hallazgos-<entidad>.json` trae todo el detalle, para un dashboard u otra herramienta.
 
@@ -146,9 +156,9 @@ Dentro de cada nivel se ordena por CVSS. Los umbrales están en `reglas.json`. E
 
 ## 8. Resultado con el caso de demo (portal-muni-gt)
 
-Entrada: salida real del crawler contra el Docker de `casos/portal-muni-gt` (Drupal 7.57 detrás de un proxy Apache 2.4.49, backend Apache 2.4.10, PHP 7.0.28). Catálogos reales: **KEV versión 2026.11.20 (1,790 vulnerabilidades)** y NVD de los 18 productos de `alias.json`, descargados el 21-nov-2026.
+Entrada: salida real del crawler contra el Docker de `casos/portal-muni-gt` (Drupal 7.57 detrás de un proxy Apache 2.4.49, backend Apache 2.4.10, PHP 7.0.28). Catálogos reales del equipo: **KEV versión 2026.11.20 (1,790 vulnerabilidades)**, en `catalogos/`. Entidad: `MUNI-GT`.
 
-**4 componentes · 10 KEV abiertos (5 usados en ransomware) · 292 otras CVE · 2 a verificar · 2 fuera de soporte**
+**4 componentes · 10 KEV abiertos (5 usados en ransomware) · 2 a verificar · 2 fuera de soporte**. Con el extra opcional de NVD completo (`--actualizar`) aparecen además 292 CVE conocidas que no están en KEV.
 
 | Prioridad | CVE | Componente |
 |---|---|---|
@@ -167,6 +177,8 @@ Fuera de soporte: Drupal 7 (desde 2025-01-05) y PHP 7.0 (desde 2019-01-10).
 
 Para el pitch: **un sistema "que funciona" sigue acumulando vulnerabilidades explotadas**; la de PHP entró a KEV hace menos de un mes.
 
+**Con el colector de código** (`revital/codigo.py`) sobre la carpeta de la app, los dos inventarios se unen en el mismo reporte de `MUNI-GT`. Probado con una app de prueba que declara `log4j-core 2.14.1` en su `pom.xml`: aparece **CVE-2021-44228 (Log4Shell)** como CRITICO, sin tocar código, solo por el alias.
+
 ### Diferencias encontradas con `casos/portal-muni-gt` (para quien mantiene el caso)
 - **CVE-2021-42013** sí aplica a 2.4.49, no "solo si 2.4.50": NVD lista 2.4.49 y 2.4.50.
 - **CVE-2019-6340** no aplica: NVD solo lista Drupal 8.5.x y 8.6.x.
@@ -180,8 +192,9 @@ Para el pitch: **un sistema "que funciona" sigue acumulando vulnerabilidades exp
 ```
 python -m revital.cves --demo                 # caso de ejemplo, sin red; termina en "ok"
 python -m revital.cves --out salida           # lee salida/inventario-*.json -> salida/reporte-<entidad>.md
-python -m revital.cves --out salida --entidad "Muni San Ejemplo"
-python -m revital.cves --actualizar           # baja KEV + NVD a datos/ (requiere internet; tarda unos minutos)
+python -m revital.cves --out salida --entidad MUNI-GT
+python -m revital.cves --actualizar           # opcional: NVD completo de los productos de alias.json a datos/ (internet, minutos)
+python scripts/actualizar_catalogos.py        # KEV + extracto NVD oficiales en catalogos/ (script del equipo)
 python -m revital.cves --actualizar --productos php,drupal   # solo algunos productos
 python tests/test_cves.py                     # pruebas (sin pytest)
 ```
@@ -197,11 +210,11 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 | `__main__.py` | Línea de comandos: `--demo`, `--out`, `--entidad`, `--actualizar` |
 | `normalizar.py` + `alias.json` | Nombre del colector → CPE de NVD; ramas fuera de soporte |
 | `versiones.py` | Comparación de versiones y rangos de NVD |
-| `catalogo.py` | Carga KEV/NVD offline; convierte respuestas crudas del API de NVD; `--actualizar` |
+| `catalogo.py` | Lee `catalogos/` (KEV + `nvd-kev.json`) y el extra de `datos/`; convierte formatos de NVD; `--actualizar` |
 | `evaluar.py` + `reglas.json` | Une componentes, cruza, prioriza; CVE condicionales y umbrales |
 | `reporte.py` | Escribe el `.md` y el `.json` |
 | `ejemplos/` | Inventario real del crawler (caso Drupal) + KEV y NVD reducidos |
-| `datos/` | Catálogos reales (los llena `--actualizar`) |
+| `datos/` | Extra local opcional `nvd_min.json` (lo llena `--actualizar`; no se sube al repo) |
 | `../../tests/test_cves.py` | Pruebas: versiones, alias, conversión de NVD, caso Drupal completo |
 
 ---
@@ -219,7 +232,7 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 - [ ] **Exploit-DB** como señal extra: "no está en KEV pero hay exploit público" como nivel entre KEV y CVSS. Se usaría su índice CSV offline; nunca se descargan exploits.
 - [ ] Ampliar `alias.json` con lo que emitan los colectores `codigo` (pom.xml, composer.json, DLLs) y `host` (software instalado en Windows).
 - [ ] EPSS (probabilidad de explotación, de FIRST) como desempate dentro de un mismo nivel.
-- [ ] Decidir con el equipo si `datos/kev.json` y `datos/nvd_min.json` (unos 10 MB) se suben al repo para que la demo funcione sin internet desde cualquier laptop.
+- [x] Catálogos offline en el repo: resuelto por el equipo en `catalogos/` (PR #7). Esta rama los usa como fuente principal.
 - [ ] Probar con Python 3.8 en Windows 7 real antes de la demo.
 
 ---

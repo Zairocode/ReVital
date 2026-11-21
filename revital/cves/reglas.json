@@ -1,5 +1,5 @@
 {
-  "_nota": "Reglas propias de ReVital que NVD/KEV no traen. 'condicionales': el CVE solo aplica si se cumple una configuracion que no se ve desde fuera; se reporta aparte como 'verificar', no como confirmado. 'umbral_alto' y 'umbral_medio' son cortes de CVSS para lo que no esta en KEV.",
+  "_nota": "Reglas propias de ReVital que NVD/KEV no traen. 'condicionales': el CVE solo aplica si se cumple una configuracion que no se ve desde fuera; se reporta aparte como 'verificar', no como confirmado. 'umbral_alto' y 'umbral_medio' son cortes de CVSS para lo que no esta en KEV. 'protocolos_obsoletos': componentes que no son software sino protocolos inseguros aceptados (los reporta el crawler). 'alertas': recomendacion para alertas de configuracion que emiten los colectores en extra.alertas (se busca el texto en minusculas).",
   "condicionales": {
     "CVE-2024-38475": "Solo si el servidor usa reglas RewriteRule de mod_rewrite que sustituyen con rutas del sistema de archivos. Revisar la configuracion de Apache.",
     "CVE-2019-6340": "Solo si el modulo RESTful Web Services esta activo y acepta PATCH/POST.",
@@ -7,5 +7,23 @@
   },
   "umbral_alto": 9.0,
   "umbral_medio": 7.0,
-  "max_no_kev_en_reporte": 20
+  "max_no_kev_en_reporte": 20,
+  "protocolos_obsoletos": {
+    "tls": {
+      "1.0": "TLS 1.0 esta declarado obsoleto por la IETF (RFC 8996, 2021). Deshabilitarlo y dejar solo TLS 1.2 o superior.",
+      "1.1": "TLS 1.1 esta declarado obsoleto por la IETF (RFC 8996, 2021). Deshabilitarlo y dejar solo TLS 1.2 o superior."
+    },
+    "ssl": {
+      "2.0": "SSL 2.0 es inseguro y obsoleto. Deshabilitarlo y dejar solo TLS 1.2 o superior.",
+      "3.0": "SSL 3.0 es inseguro (POODLE) y obsoleto. Deshabilitarlo y dejar solo TLS 1.2 o superior."
+    }
+  },
+  "alertas": {
+    "debug=true": "Poner compilation debug=\"false\" en el web.config de produccion: el modo depuracion expone informacion interna y baja el rendimiento.",
+    "customerrors mode=off": "Usar customErrors mode=\"RemoteOnly\" u \"On\": con Off el publico ve errores detallados (rutas, versiones, codigo)."
+  },
+  "notas_colector": [
+    "se alcanzo el tope",
+    "no se pudo leer"
+  ]
 }

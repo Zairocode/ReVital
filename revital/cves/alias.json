@@ -86,6 +86,51 @@
       "nombres": ["sharepoint", "microsoft sharepoint", "sharepoint server"],
       "eol": {"2010": "2021-04-13", "2013": "2023-04-11"}
     },
+    ".NET Framework": {
+      "cpe": ["microsoft:.net_framework"],
+      "nombres": [".net framework", "net framework", "dotnet framework"],
+      "eol": {}
+    },
+    "jQuery UI": {
+      "cpe": ["jqueryui:jquery_ui"],
+      "nombres": ["jquery ui", "jquery-ui"],
+      "eol": {}
+    },
+    "Symfony": {
+      "cpe": ["symfony:symfony"],
+      "nombres": ["symfony", "symfony/symfony"],
+      "eol": {}
+    },
+    "Django": {
+      "cpe": ["djangoproject:django"],
+      "nombres": ["django"],
+      "eol": {"1": "2020-04-01"}
+    },
+    "Apache log4net": {
+      "cpe": ["apache:log4net"],
+      "nombres": ["log4net"],
+      "eol": {}
+    },
+    "lodash": {
+      "cpe": ["lodash:lodash"],
+      "nombres": ["lodash"],
+      "eol": {}
+    },
+    "Jackson Databind": {
+      "cpe": ["fasterxml:jackson-databind"],
+      "nombres": ["jackson databind", "jackson-databind"],
+      "eol": {}
+    },
+    "Apache Commons Collections": {
+      "cpe": ["apache:commons_collections"],
+      "nombres": ["commons collections", "commons-collections", "apache commons collections"],
+      "eol": {}
+    },
+    "PHPMailer": {
+      "cpe": ["phpmailer_project:phpmailer"],
+      "nombres": ["phpmailer", "phpmailer/phpmailer"],
+      "eol": {}
+    },
     "Spring Framework": {
       "cpe": ["vmware:spring_framework"],
       "nombres": ["spring framework", "spring core", "spring webmvc"],
