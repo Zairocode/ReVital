@@ -62,6 +62,28 @@ code{background:#1a1a1a;color:#f2f2f2;border-radius:4px;padding:1px 5px;font:13p
 .tl{border-left:2px solid #2f2f2f;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
 @media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:24px}}
 @media print{.top,.tabs,.btn,.nav,.pie{display:none} body{background:#fff;color:#000}}
+/* tarjetas HUD: rojo = vulnerable, verde = correcto, gris = neutro */
+body{background-color:#05070a;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:34px 34px}
+.top{background:#000}
+.card,.k,details.h,.md,.aviso{position:relative;border:1px solid #2c2c2c;border-radius:4px;background:#0b0c0f;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
+.card:before,.k:before,details.h:before,.md:before,.aviso:before{content:"";position:absolute;top:-1px;right:-1px;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #5a5a5a transparent transparent}
+.card:after,.k:after,details.h:after,.md:after,.aviso:after{content:"";position:absolute;bottom:-1px;left:-1px;border-style:solid;border-width:16px 0 0 16px;border-color:transparent transparent transparent #5a5a5a}
+.card.mal,.k.mal,.k.med,details.h,.aviso.mal{border-color:rgba(225,6,0,.65);background:#140405;background:linear-gradient(135deg,rgba(225,6,0,.22),rgba(225,6,0,.04))}
+.card.mal:before,.k.mal:before,.k.med:before,details.h:before,.aviso.mal:before{border-right-color:#e10600}
+.card.mal:after,.k.mal:after,.k.med:after,details.h:after,.aviso.mal:after{border-left-color:#e10600}
+.card.bien,.k.bien,.aviso.bien{border-color:rgba(34,197,94,.6);background:#04120a;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.04))}
+.card.bien:before,.k.bien:before,.aviso.bien:before{border-right-color:#22c55e}
+.card.bien:after,.k.bien:after,.aviso.bien:after{border-left-color:#22c55e}
+.k{border-top-width:1px} .aviso{border-left-width:1px}
+.card.mal h3{color:#ff3b30} .card.bien h3{color:#22c55e}
+details.h[open]{border-color:#e10600;background:#1a0506;background:linear-gradient(135deg,rgba(225,6,0,.3),rgba(225,6,0,.06))}
+details.h .cu{border-top-color:rgba(225,6,0,.3)}
+table{border-color:rgba(225,6,0,.45);border-radius:4px;background:#0b0c0f;background:linear-gradient(135deg,rgba(225,6,0,.1),rgba(255,255,255,.015))}
+th{background:rgba(225,6,0,.12);color:#ff6b62;border-bottom-color:rgba(225,6,0,.35)}
+td{border-bottom-color:rgba(255,255,255,.06)}
+.btn{border-radius:3px} .btn.sec{border-radius:3px} .estado,.chip{border-radius:3px}
+pre{border-color:rgba(225,6,0,.35);border-radius:3px}
+input[type=text],select{border-radius:3px}
 """
 
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c0 9-6 15-14 18C11 33 5 27 5 18V7Z" fill="#ffffff"/>'
@@ -117,13 +139,13 @@ def inicio(ents, alertas, estado_s, mensaje=""):
         b.append('<div class="grid">')
         for x in ents:
             r = x["r"]
-            b.append('<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:18px;margin:0">%s</h3>%s</div>'
+            b.append('<div class="card %s"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:18px;margin:0">%s</h3>%s</div>'
                      '<p class="mut peq" style="margin:2px 0 12px">Evaluado el %s · catálogo KEV %s</p>'
                      '<div class="fila" style="margin:0 -4px 6px"><div style="padding:0 4px"><div style="font-size:26px;font-weight:800;color:%s">%d</div><div class="mut peq">KEV abiertas</div></div>'
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">con ransomware</div></div>'
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">componentes</div></div></div>'
                      '<a class="btn" href="/e/%s">Abrir</a> <a class="btn sec" href="/zip/%s">Descargar documentación</a></div>'
-                     % (e(x["entidad"]), estado_chip(r["cumple"]), e(x["h"].get("fecha_evaluacion", "")),
+                     % ("bien" if r["cumple"] else "mal", e(x["entidad"]), estado_chip(r["cumple"]), e(x["h"].get("fecha_evaluacion", "")),
                         e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#e10600" if r["kev"] else "#22c55e",
                         r["kev"], r["ransomware"], r["componentes"], e(x["slug"]), e(x["slug"])))
         b.append("</div>")
@@ -179,7 +201,7 @@ def _config(items):
     if not items:
         return ""
     return ("<h2>Configuración insegura detectada</h2>" + "".join(
-        '<div class="card" style="margin-bottom:10px"><b>%s</b> · %s<br><span class="mut peq">%s</span></div>'
+        '<div class="card mal" style="margin-bottom:10px"><b>%s</b> · %s<br><span class="mut peq">%s</span></div>'
         % (e(i.get("tipo", "")), e(i.get("detalle", "")), ("Qué hacer: " + e(i["recomendacion"])) if i.get("recomendacion") else "") for i in items))
 
 
