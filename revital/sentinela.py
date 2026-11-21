@@ -1,5 +1,6 @@
 """Sentinela de ReVital: vuelve a analizar los objetivos cada cierto tiempo, compara contra la vez anterior y avisa.
 
+Vigila sitios web (crawler), carpetas de codigo y equipos de la red (colector de red: servicios que aparecen o cambian).
 Detecta: componentes nuevos o con otra version, vulnerabilidades KEV nuevas o resueltas, cambio de cumplimiento y
 objetivos que dejan de responder. Los avisos se ven en el panel (salida/alertas.jsonl) y, si se configura, ejecutan un
 comando propio. Solo stdlib (Python 3.8+); pensado para dejarlo corriendo en un equipo viejo.
@@ -11,7 +12,8 @@ comando propio. Solo stdlib (Python 3.8+); pensado para dejarlo corriendo en un 
 sentinela.json (ver revital/sentinela.ejemplo.json):
   {"cada_minutos": 60, "salida": "salida",
    "objetivos": [{"entidad": "MUNI-GT", "tipo": "web", "destino": "http://localhost:8080", "insecure": false},
-                 {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "C:\\\\inetpub\\\\portal"}],
+                 {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "C:\\\\inetpub\\\\portal"},
+                 {"entidad": "MUNI-GT", "tipo": "red", "destino": "192.168.1.10", "puertos": [21, 25, 3306, 6379]}],
    "al_detectar_cambio": "python mi_aviso.py"}     # opcional; recibe REVITAL_ENTIDAD y REVITAL_ALERTAS (JSON)
 Solo contra sistemas propios o con autorizacion.
 """
@@ -119,6 +121,11 @@ def vuelta(cfg, salida, timeout=900):
             cmd += ["--insecure"] if o.get("insecure") else []
         elif o["tipo"] == "codigo":
             cmd = ["revital.codigo", o["destino"], "--entidad", ent, "--out", salida]
+        elif o["tipo"] == "red":
+            # quien escribe sentinela.json es quien administra el equipo: tenerlo configurado equivale a --autorizo.
+            # Siguen valiendo los limites del colector (solo redes privadas/Tailscale, maximo de equipos).
+            cmd = ["revital.red", o["destino"], "--entidad", ent, "--out", salida, "--autorizo"]
+            cmd += ["--puertos", ",".join(str(int(p)) for p in o["puertos"])] if o.get("puertos") else []
         else:
             estado.append(dict(o, ok=False, detalle="tipo desconocido: %s" % o["tipo"]))
             continue

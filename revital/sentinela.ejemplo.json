@@ -3,7 +3,8 @@
   "salida": "salida",
   "objetivos": [
     {"entidad": "MUNI-GT", "tipo": "web", "destino": "http://localhost:8080", "insecure": false},
-    {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "C:\inetpub\portal"}
+    {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "C:\\inetpub\\portal"},
+    {"entidad": "MUNI-GT", "tipo": "red", "destino": "192.168.1.10", "puertos": [21, 25, 3306, 6379]}
   ],
   "al_detectar_cambio": ""
 }
