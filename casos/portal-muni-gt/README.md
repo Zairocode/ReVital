@@ -29,19 +29,24 @@ porque escanear uno real sin autorización es ilegal."*
 | Componente | Versión | Por qué esa |
 |---|---|---|
 | Drupal Core | **7.57** | Drupal 7 llegó a **fin de vida el 5-ene-2025**: sin parches del proveedor. Literalmente "legacy sin soporte" |
-| Apache HTTP Server | **2.4.49** | Al frente como reverse proxy / servidor. Versión con CVE en KEV |
+| Apache HTTP Server (proxy) | **2.4.49** | Al frente como reverse proxy. Versión con CVE-2021-41773 en KEV |
+| Apache HTTP Server (backend) | **2.4.10** | El Apache propio de la imagen `drupal:7.57`. De 2014; su versión se filtra a través del proxy. Tiene **CVE-2024-38475** (KEV) |
 | PHP | 7.x (según imagen Drupal 7) | — |
-| MySQL / MariaDB | 5.x | BD del CMS |
+| MySQL / MariaDB | 5.x / 10.x | BD del CMS |
+
+> **Hay dos Apache, no uno** (lo detectó el equipo al correrlo): el proxy 2.4.49 y el backend 2.4.10.
+> El cruce de CVEs debe considerar ambas versiones; cada una aporta una CVE distinta en KEV.
 
 CPEs que ReVital debe emitir:
-`cpe:2.3:a:drupal:drupal:7.57` · `cpe:2.3:a:apache:http_server:2.4.49`
+`cpe:2.3:a:drupal:drupal:7.57` · `cpe:2.3:a:apache:http_server:2.4.49` · `cpe:2.3:a:apache:http_server:2.4.10`
 
 ## 3. Hallazgos CISA KEV (verificados contra el feed oficial el 2026-11-21, publicado 2026-11-20)
 
 | CVE | Componente | KEV desde | Ransomware | Vector L7 (lo bloquea el proxy) |
 |---|---|---|---|---|
 | **CVE-2018-7600** (Drupalgeddon 2) | Drupal Core 7.57 | 2021-11-03 | **Known** | `POST /user/register?element_parents=...#post_render` → RCE. Regla: bloquear claves `#`/`element_parents` en el body |
-| **CVE-2021-41773** | Apache 2.4.49 | 2021-11-03 | **Known** | Path traversal / RCE vía `GET /cgi-bin/.%2e/...`. Regla: bloquear `%2e` codificado en la ruta |
+| **CVE-2021-41773** | Apache 2.4.49 (proxy) | 2021-11-03 | **Known** | Path traversal / RCE. PoC confirmado por `GET /cgi-bin/.%2e/%2e%2e/...etc/passwd` (por `/icons/` no funciona en este montaje). Regla: bloquear `%2e` codificado en la ruta |
+| CVE-2024-38475 | Apache 2.4.10 (backend) | 2025-05-01 | Unknown | mod_rewrite, afecta <2.4.60. Aplica al Apache del backend; condicionada a que haya `RewriteRule` vulnerables |
 | CVE-2021-42013 | Apache 2.4.50 | 2021-11-03 | **Known** | Igual que 41773 pero en 2.4.50 (doble codificación). Útil para mostrar "parchar mal no alcanza" |
 | CVE-2019-6340 | Drupal Core | 2022-03-25 | Unknown | RCE vía REST. Solo aplica si el módulo RESTful está activo. Dejarlo como "depende de config" |
 
