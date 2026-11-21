@@ -192,7 +192,7 @@ Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid
 
 **Probado contra el caso real (`casos/portal-muni-gt`, Docker):** detecta Drupal 7.57 (`/CHANGELOG.txt`), Apache 2.4.49 (proxy, error 400), Apache 2.4.10 y PHP 7.0.28 (backend) y las 36 rutas de `robots.txt`.
 
-**TLS viejo:** con `--insecure` el crawler baja hasta TLS 1.0 (Python moderno exige 1.2 por defecto) y, en cada `https`, prueba TLS 1.3/1.2/1.1/1.0 por separado. Si el servidor acepta 1.0 o 1.1 queda como componente `TLS` (protocolo obsoleto) y en una sección del reporte. Probado con servidores locales de prueba en Python 3.8 + OpenSSL 1.1.1; **no** probado en un Windows 7 real.
+**TLS viejo:** con `--insecure` el crawler baja hasta TLS 1.0 (Python moderno exige 1.2 por defecto) y, en cada `https`, prueba TLS 1.3/1.2/1.1/1.0 por separado. Si el servidor acepta 1.0 o 1.1 queda como componente `TLS` (protocolo obsoleto) y en una sección del reporte. Probado con servidores locales de prueba en Python 3.8 + OpenSSL 1.1.1; **no** probado en un Windows 7 real. **Límite del sistema operativo:** si el SO prohíbe TLS 1.0 para todos los programas (Fedora/RHEL con `crypto-policies`, algunos Linux endurecidos), ni siquiera `--insecure` puede entrar a servidores TLS 1.0 desde esa máquina; `tests/test_crawler_tls.py` lo detecta y se omite. En Windows, Debian y Docker funciona.
 
 **Pendiente del colector:** login y JavaScript.
 
