@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Portal municipal ficticio MuniSoke GT (Municipalidad de Soke). Trámites en línea, pago de servicios, noticias y transparencia Art. 10 LAIP para el caso ReVital MUNI-GT.">
+  <meta name="color-scheme" content="light">
+  <title>MuniSoke GT · Municipalidad de Soke</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 74'%3E%3Cpath d='M32 3 60 12v26c0 18-13 29-28 33C17 67 4 56 4 38V12Z' fill='%230a2a66' stroke='%23f6b11f' stroke-width='4'/%3E%3Ccircle cx='32' cy='26' r='8' fill='%23f6b11f'/%3E%3Cpath d='M13 52 28 31 38 45 45 36 53 52Z' fill='%239bd60d'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./css/fonts.css">
+  <link rel="stylesheet" href="./css/styles.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "gsap": "./vendor/gsap/index.js",
+      "gsap/ScrollTrigger": "./vendor/gsap/ScrollTrigger.js"
+    }
+  }
+  </script>
+  <script type="module" src="./js/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido-principal">Saltar al contenido principal</a>
+
+  <!-- Region: demo_banner -->
+  <div class="demo-bar" role="region" aria-label="Aviso de portal de demostración" data-region="demo-banner">
+    <div class="wrap demo-bar-inner">
+      <svg class="demo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span>PORTAL DE DEMOSTRACIÓN · Municipalidad ficticia “MuniSoke GT” (MUNI-GT) · objetivo del caso ReVital · no es una institución real</span>
+    </div>
+  </div>
+
+  <!-- Region: util -->
+  <div class="util" data-region="util">
+    <div class="wrap util-inner">
+      <span class="util-mini">MuniSoke GT</span>
+
+      <nav class="util-nav" aria-label="Accesos rápidos">
+        <a href="#inicio">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5 12 3l9 7.5"/>
+            <path d="M5 9.5V20h14V9.5"/>
+          </svg>
+          <span>MuniSoke</span>
+        </a>
+        <a href="#noticias">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M6.3 17.7a8 8 0 0 1 0-11.4"/>
+            <path d="M17.7 6.3a8 8 0 0 1 0 11.4"/>
+          </svg>
+          <span>Transmisiones</span>
+        </a>
+        <a href="#servicios">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <path d="M8 10h8M8 14h5"/>
+          </svg>
+          <span>Mi Portal</span>
+        </a>
+        <a href="#contacto">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="m3 7 9 6 9-6"/>
+          </svg>
+          <span>WebMail</span>
+        </a>
+      </nav>
+
+      <div class="util-tools">
+        <form class="srch" role="search" id="site-search">
+          <label for="search-input" class="sr-only">Buscar trámite</label>
+          <input type="search" id="search-input" name="q" placeholder="Buscar trámite…" autocomplete="off">
+          <button type="submit" aria-label="Buscar trámite">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m20 20-3.5-3.5"/>
+            </svg>
+          </button>
+          <span id="search-feedback" class="sr-only" role="status" aria-live="polite"></span>
+        </form>
+
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false" aria-label="Cambiar a modo oscuro">
+          <svg class="theme-icon icon-moon" data-theme-icon="moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+          </svg>
+          <svg class="theme-icon icon-sun" data-theme-icon="sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <span class="theme-toggle-label theme-label">Activar modo oscuro</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region: header -->
+  <header class="site-header" data-region="header">
+    <div class="wrap site-header-inner">
+      <div class="brand-lockup">
+        <!-- Escudo municipal ficticio: volcán del altiplano y sol dorado sobre campo lima -->
+        <svg class="brand-crest" width="60" height="70" viewBox="0 0 64 74" role="img" aria-label="Escudo ficticio de la Municipalidad de Soke">
+          <defs>
+            <linearGradient id="crest-shield" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1452c9"/>
+              <stop offset="100%" stop-color="#0a2a66"/>
+            </linearGradient>
+            <linearGradient id="crest-field" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b4e835"/>
+              <stop offset="100%" stop-color="#9bd60d"/>
+            </linearGradient>
+            <clipPath id="crest-clip">
+              <path d="M32 10 53 17v21c0 13-9 21-21 25C20 59 11 51 11 38V17Z"/>
+            </clipPath>
+          </defs>
+          <path d="M32 3 60 12v26c0 18-13 29-28 33C17 67 4 56 4 38V12Z" fill="url(#crest-shield)" stroke="#f6b11f" stroke-width="2.6"/>
+          <path d="M32 7 56 15v23c0 15-11 25-24 29C19 63 8 53 8 38V15Z" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="1"/>
+          <g clip-path="url(#crest-clip)">
+            <rect x="8" y="9" width="48" height="56" fill="url(#crest-field)"/>
+            <circle cx="32" cy="26" r="10.5" fill="#f6b11f" opacity="0.32"/>
+            <circle cx="32" cy="26" r="7" fill="#f6b11f"/>
+            <path d="M8 58 27 31 39 46 47 36 60 58Z" fill="#128a4e"/>
+            <path d="M27 31 39 46 31 58 17 58Z" fill="#0d6b3c"/>
+            <path d="M39 46 47 36 58 58 43 58Z" fill="#0a542f"/>
+            <path d="M10 55h44" stroke="#f6b11f" stroke-width="2"/>
+          </g>
+        </svg>
+
+        <div class="brand">
+          <span>Municipalidad de Soke</span>
+          <h1>MuniSoke GT</h1>
+        </div>
+      </div>
+
+      <div class="header-office">
+        <span class="office-badge" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+        </span>
+        <div class="office-copy">
+          <strong>Atención ciudadana</strong>
+          <span>Lunes a viernes 8:00–16:00</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Region: nav -->
+  <nav class="site-nav" aria-label="Navegación principal" data-region="nav">
+    <div class="wrap site-nav-inner">
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="nav-links">
+        <svg class="nav-icon-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+        <svg class="nav-icon-close" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6l-12 12"/>
+        </svg>
+        <span>Menú</span>
+      </button>
+
+      <div id="nav-links" class="nav-links">
+        <a href="#inicio" class="is-active" aria-current="page">INICIO</a>
+        <a href="#cifras">LA CIUDAD</a>
+        <a href="#contacto">LA MUNI</a>
+        <a href="#transparencia">TRANSPARENCIA</a>
+        <a href="#servicios">SERVICIOS</a>
+        <a href="#noticias">NOTICIAS</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="contenido-principal" tabindex="-1">
+    <!-- Region: hero -->
+    <section id="inicio" class="hero" aria-labelledby="hero-titulo" data-region="hero">
+      <div class="hero-stage" aria-hidden="true">
+        <!-- Ilustración SVG de alta calidad del altiplano volcánico de Soke (LCP inmediato y fallback sin WebGL) -->
+        <svg class="hero-fallback-svg" viewBox="0 0 1440 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="hero-sky" x1="0" y1="0" x2="0.15" y2="1">
+              <stop offset="0%" stop-color="#3f86d6"/>
+              <stop offset="48%" stop-color="#6aa9e8"/>
+              <stop offset="82%" stop-color="#a9d0f3"/>
+              <stop offset="100%" stop-color="#d9ecfb"/>
+            </linearGradient>
+            <radialGradient id="hero-sun-glow" cx="76%" cy="27%" r="34%">
+              <stop offset="0%" stop-color="#f6b11f" stop-opacity="0.52"/>
+              <stop offset="45%" stop-color="#f6b11f" stop-opacity="0.16"/>
+              <stop offset="100%" stop-color="#f6b11f" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="vol-far" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1b4f8c"/>
+              <stop offset="100%" stop-color="#103364"/>
+            </linearGradient>
+            <linearGradient id="vol-mid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#136a42"/>
+              <stop offset="100%" stop-color="#0a3b26"/>
+            </linearGradient>
+            <linearGradient id="vol-mid-lit" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1e8f56"/>
+              <stop offset="100%" stop-color="#0e5232"/>
+            </linearGradient>
+            <linearGradient id="vol-near" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0f5c39"/>
+              <stop offset="100%" stop-color="#082d1f"/>
+            </linearGradient>
+            <linearGradient id="mist-band" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b7d4ff" stop-opacity="0"/>
+              <stop offset="55%" stop-color="#b7d4ff" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#0b2859" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="valley-floor" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#082352"/>
+              <stop offset="100%" stop-color="#051636"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Cielo y halo solar -->
+          <rect width="1440" height="620" fill="url(#hero-sky)"/>
+          <rect width="1440" height="620" fill="url(#hero-sun-glow)"/>
+
+          <!-- Líneas topográficas sutiles en el cielo alto -->
+          <g fill="none" stroke="#dce9ff" stroke-opacity="0.08" stroke-width="1">
+            <path d="M640 88 Q880 42 1120 82 T1440 62"/>
+            <path d="M560 132 Q840 76 1140 124 T1440 106"/>
+            <path d="M690 176 Q960 124 1230 162 T1440 148"/>
+          </g>
+
+          <!-- Sol del altiplano -->
+          <circle cx="1095" cy="164" r="96" fill="#f6b11f" opacity="0.12"/>
+          <circle cx="1095" cy="164" r="66" fill="#f6b11f" opacity="0.22"/>
+          <circle cx="1095" cy="164" r="44" fill="#f6b11f" opacity="0.94"/>
+
+          <!-- Nubes tenues del valle -->
+          <g fill="#e6f0ff" opacity="0.12">
+            <path d="M720 148c18-12 46-12 64 0 18-6 40 2 46 14H692c4-8 14-14 28-14Z"/>
+            <path d="M1210 218c16-10 40-10 56 0 14-5 32 2 38 12h-118c4-7 12-12 24-12Z"/>
+          </g>
+
+          <!-- Cadena lejana de montañas -->
+          <path d="M0 445 L180 310 L325 368 L525 258 L690 355 L895 275 L1085 362 L1275 268 L1440 345 V520 H0Z" fill="url(#vol-far)" opacity="0.82"/>
+
+          <!-- Niebla atmosférica trasera -->
+          <rect x="0" y="330" width="1440" height="125" fill="url(#mist-band)"/>
+
+          <!-- Volcán central de Soke y cumbres medias -->
+          <path d="M150 495 L430 235 L495 275 L665 495Z" fill="url(#vol-mid)"/>
+          <path d="M430 235 L495 275 L610 495 L455 495Z" fill="url(#vol-mid-lit)" opacity="0.65"/>
+
+          <path d="M510 505 L855 178 L935 232 L1190 505Z" fill="url(#vol-mid)"/>
+          <!-- Ladera iluminada por el sol -->
+          <path d="M855 178 L935 232 L1190 505 L915 505 L868 295Z" fill="url(#vol-mid-lit)"/>
+          <!-- Cresta sutil del cráter -->
+          <path d="M832 200 L855 178 L882 196" fill="none" stroke="#9bd60d" stroke-opacity="0.35" stroke-width="2.5" stroke-linecap="round"/>
+
+          <!-- Tercer volcán oriental -->
+          <path d="M980 510 L1255 238 L1440 412 V520 H980Z" fill="url(#vol-near)"/>
+          <path d="M1255 238 L1440 412 V485 L1290 485Z" fill="#167647" opacity="0.55"/>
+
+          <!-- Niebla baja sobre el valle -->
+          <path d="M0 452 Q360 418 720 446 T1440 434 V510 H0Z" fill="#c7e0ff" opacity="0.1"/>
+
+          <!-- Silueta urbana municipal estilizada (zona central y derecha) -->
+          <g fill="#081e47">
+            <!-- Palacio Municipal con torre y arcada -->
+            <rect x="860" y="424" width="166" height="84" rx="2"/>
+            <rect x="922" y="382" width="42" height="44" rx="2"/>
+            <path d="M916 384 943 364 970 384Z"/>
+            <circle cx="943" cy="402" r="7" fill="#f6b11f" opacity="0.9"/>
+            <!-- Bloques urbanos -->
+            <rect x="690" y="438" width="66" height="70"/>
+            <rect x="768" y="410" width="76" height="98"/>
+            <rect x="1044" y="432" width="78" height="76"/>
+            <rect x="1136" y="396" width="68" height="112"/>
+            <rect x="1218" y="436" width="84" height="72"/>
+            <rect x="1316" y="418" width="64" height="90"/>
+            <!-- Edificaciones hacia la izquierda -->
+            <rect x="110" y="446" width="72" height="62"/>
+            <rect x="196" y="422" width="64" height="86"/>
+            <rect x="274" y="454" width="58" height="54"/>
+          </g>
+
+          <!-- Arcada sutil del palacio y ventanas cálidas -->
+          <g fill="#f6b11f" opacity="0.88">
+            <rect x="880" y="446" width="10" height="14" rx="5"/>
+            <rect x="902" y="446" width="10" height="14" rx="5"/>
+            <rect x="924" y="446" width="10" height="14" rx="5"/>
+            <rect x="952" y="446" width="10" height="14" rx="5"/>
+            <rect x="974" y="446" width="10" height="14" rx="5"/>
+            <rect x="996" y="446" width="10" height="14" rx="5"/>
+            <rect x="786" y="428" width="8" height="9"/>
+            <rect x="802" y="428" width="8" height="9"/>
+            <rect x="786" y="446" width="8" height="9"/>
+            <rect x="1154" y="416" width="8" height="9"/>
+            <rect x="1170" y="416" width="8" height="9"/>
+            <rect x="1154" y="436" width="8" height="9"/>
+            <rect x="1334" y="438" width="8" height="9"/>
+            <rect x="214" y="440" width="8" height="9"/>
+          </g>
+
+          <!-- Parque cívico / árboles estilizados -->
+          <g fill="#128a4e" opacity="0.85">
+            <circle cx="848" cy="492" r="14"/>
+            <circle cx="1034" cy="490" r="16"/>
+            <circle cx="1126" cy="494" r="13"/>
+            <circle cx="1210" cy="492" r="14"/>
+          </g>
+
+          <!-- Base del valle -->
+          <rect y="502" width="1440" height="118" fill="url(#valley-floor)"/>
+          <path d="M0 502 H1440" stroke="#9bd60d" stroke-opacity="0.35" stroke-width="2"/>
+        </svg>
+
+        <!-- Escenario WebGL 3D (gestionado por js/scene-3d.js) -->
+        <canvas id="hero-3d-canvas" class="hero-canvas" aria-hidden="true"></canvas>
+
+        <!-- Scrim direccional para garantizar legibilidad AAA sobre el escenario -->
+        <div class="hero-scrim" aria-hidden="true"></div>
+      </div>
+
+      <div class="hero-content wrap">
+        <div class="hero-copy">
+          <h2 id="hero-titulo" class="hero-title" data-anim="hero-item">Tu municipalidad,<br>en línea y protegida</h2>
+          <p class="hero-lead" data-anim="hero-item">Trámites, pagos y transparencia para los vecinos de Soke, sin filas y sin papeleo.</p>
+          <div class="hero-btns" data-anim="hero-item">
+            <a href="#servicios" class="btn btn-primary">Pagar un servicio</a>
+            <a href="#transparencia" class="btn btn-secondary">Solicitar información</a>
+          </div>
+          <div class="hero-meta" data-anim="hero-item">
+            <span class="hero-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 7v5l3 2"/>
+              </svg>
+              <span>Ventanilla única 24/7</span>
+            </span>
+            <span class="hero-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z"/>
+                <circle cx="12" cy="11" r="2"/>
+              </svg>
+              <span>Valle de Soke · Zona 1</span>
+            </span>
+            <span class="hero-meta-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3 4 7v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7Z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <span>Decreto 57-2008 LAIP</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Region: servicios -->
+    <section id="servicios" class="sec sec-servicios" aria-labelledby="tit-servicios" data-region="servicios">
+      <div class="wrap">
+        <div class="sec-head" data-anim="section-head">
+          <h2 id="tit-servicios" class="sec-title">Pago de servicios en línea</h2>
+          <p class="sec-sub">Consulta saldos, emite comprobantes y gestiona tus pagos municipales desde cualquier lugar.</p>
+          <div class="rule" aria-hidden="true"></div>
+        </div>
+
+        <div class="serv">
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="multas-pmt">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="5" y="3" width="14" height="18" rx="2"/>
+                <path d="M9 8h6M9 12h6M9 16h3"/>
+              </svg>
+            </span>
+            <span class="tile-title">Multas PMT</span>
+            <span class="tile-desc">Consulta por placa y pago en línea</span>
+          </a>
+
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="agua-empasoke">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9Z"/>
+                <path d="M10 13.5a2 2 0 0 0 2 2"/>
+              </svg>
+            </span>
+            <span class="tile-title">Agua EMPASOKE</span>
+            <span class="tile-desc">Recibo mensual y saldo de canon</span>
+          </a>
+
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="boleto-ornato">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3h9l3 3v15H6Z"/>
+                <path d="M15 3v3h3"/>
+                <path d="M9 11h6M9 15h6"/>
+              </svg>
+            </span>
+            <span class="tile-title">Boleto de Ornato</span>
+            <span class="tile-desc">Emisión digital y verificación anual</span>
+          </a>
+
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="iusi">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 11 12 4l8 7"/>
+                <path d="M6 10v10h12V10"/>
+                <rect x="10" y="13" width="4" height="7"/>
+              </svg>
+            </span>
+            <span class="tile-title">IUSI</span>
+            <span class="tile-desc">Estado de cuenta y pago trimestral</span>
+          </a>
+
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="licencias">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <path d="M8 4v16M4 9h4M4 15h4M12 9h4M12 13h4"/>
+              </svg>
+            </span>
+            <span class="tile-title">Licencias</span>
+            <span class="tile-desc">Construcción, rótulos y uso de suelo</span>
+          </a>
+
+          <a href="#servicios" class="tile" data-anim="service-card" data-service="expedientes-web">
+            <span class="ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 3h8l4 4v14H6Z"/>
+                <path d="M14 3v4h4"/>
+                <path d="m10 14 2 2 4-4"/>
+              </svg>
+            </span>
+            <span class="tile-title">Expedientes Web</span>
+            <span class="tile-desc">Seguimiento a gestiones en trámite</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Region: cifras -->
+    <section id="cifras" class="stats" aria-labelledby="tit-cifras" data-region="cifras">
+      <div class="wrap">
+        <h2 id="tit-cifras" class="sr-only">Compromisos y cifras del municipio</h2>
+        <div class="stats-grid">
+          <div class="stat" data-anim="stat-item">
+            <strong class="stat-val" data-count-to="12">12</strong>
+            <span class="stat-label">trámites en línea</span>
+          </div>
+          <div class="stat" data-anim="stat-item">
+            <strong class="stat-val" data-count-to="340">340</strong>
+            <span class="stat-label">municipalidades como esta en GT</span>
+          </div>
+          <div class="stat" data-anim="stat-item">
+            <strong class="stat-val" data-count-static="24/7">24/7</strong>
+            <span class="stat-label">pagos disponibles</span>
+          </div>
+          <div class="stat" data-anim="stat-item">
+            <strong class="stat-val" data-count-to="10" data-count-suffix=" días">10 días</strong>
+            <span class="stat-label">plazo de respuesta LAIP (Art. 42)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Region: noticias -->
+    <section id="noticias" class="sec sec-noticias" aria-labelledby="tit-noticias" data-region="noticias">
+      <div class="wrap">
+        <div class="sec-head" data-anim="section-head">
+          <h2 id="tit-noticias" class="sec-title">Lo más relevante</h2>
+          <p class="sec-sub">Información actualizada sobre mantenimiento vial, agua potable y gestión pública en Soke.</p>
+          <div class="rule" aria-hidden="true"></div>
+        </div>
+
+        <div class="news">
+          <article class="np" data-anim="news-card">
+            <div class="ph">
+              <svg viewBox="0 0 400 184" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="news-obras-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#1452c9"/>
+                    <stop offset="100%" stop-color="#0a2a66"/>
+                  </linearGradient>
+                </defs>
+                <rect width="400" height="184" fill="url(#news-obras-bg)"/>
+                <circle cx="322" cy="48" r="24" fill="#f6b11f" opacity="0.88"/>
+                <circle cx="322" cy="48" r="38" fill="#f6b11f" opacity="0.18"/>
+                <path d="M0 126 L108 72 L214 118 L322 66 L400 108 V184 H0Z" fill="#0d3b2b" opacity="0.62"/>
+                <!-- Perspectiva vial estilizada -->
+                <path d="M120 184 L182 104 H218 L280 184Z" fill="#071a3e"/>
+                <path d="M198 112 L195 130 H205 L202 112Z" fill="#f6b11f"/>
+                <path d="M196 140 L192 166 H208 L204 140Z" fill="#f6b11f"/>
+                <path d="M0 156 Q200 144 400 158" fill="none" stroke="#9bd60d" stroke-opacity="0.55" stroke-width="2"/>
+              </svg>
+              <span class="tag">Obras</span>
+            </div>
+            <div class="bd">
+              <h3>Reencarpetado de la 4a calle, zona 1</h3>
+              <p>Avanza el mantenimiento vial en el centro de Soke para mejorar la movilidad de los vecinos.</p>
+              <a href="#noticias" class="more">
+                <span>Leer más<span class="sr-only"> sobre Reencarpetado de la 4a calle, zona 1</span></span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"/>
+                </svg>
+              </a>
+            </div>
+          </article>
+
+          <article class="np" data-anim="news-card">
+            <div class="ph">
+              <svg viewBox="0 0 400 184" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="news-agua-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#128a4e"/>
+                    <stop offset="100%" stop-color="#084227"/>
+                  </linearGradient>
+                </defs>
+                <rect width="400" height="184" fill="url(#news-agua-bg)"/>
+                <circle cx="96" cy="56" r="34" fill="#9bd60d" opacity="0.24"/>
+                <path d="M96 32c10 14 17 22 17 31a17 17 0 0 1-34 0c0-9 7-17 17-31Z" fill="#e6f5ff" opacity="0.92"/>
+                <!-- Ondas de red hídrica -->
+                <path d="M0 124 Q80 98 160 124 T320 124 T400 118 V184 H0Z" fill="#0a2a66" opacity="0.55"/>
+                <path d="M0 146 Q100 124 200 146 T400 142 V184 H0Z" fill="#071e49" opacity="0.78"/>
+                <path d="M0 132 Q100 112 200 132 T400 128" fill="none" stroke="#9bd60d" stroke-opacity="0.65" stroke-width="2"/>
+              </svg>
+              <span class="tag">Agua</span>
+            </div>
+            <div class="bd">
+              <h3>Fuga reparada en el sector El Mirador</h3>
+              <p>Cuadrillas de EMPASOKE restablecieron el servicio en menos de seis horas.</p>
+              <a href="#noticias" class="more">
+                <span>Leer más<span class="sr-only"> sobre Fuga reparada en el sector El Mirador</span></span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"/>
+                </svg>
+              </a>
+            </div>
+          </article>
+
+          <article class="np" data-anim="news-card">
+            <div class="ph">
+              <svg viewBox="0 0 400 184" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="news-transp-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#0a2a66"/>
+                    <stop offset="100%" stop-color="#061738"/>
+                  </linearGradient>
+                </defs>
+                <rect width="400" height="184" fill="url(#news-transp-bg)"/>
+                <!-- Composición editorial de presupuesto y rendición de cuentas -->
+                <rect x="44" y="34" width="128" height="114" rx="8" fill="#133a85" stroke="#5b93ff" stroke-opacity="0.35" stroke-width="1.5"/>
+                <rect x="64" y="96" width="18" height="34" rx="3" fill="#9bd60d"/>
+                <rect x="92" y="74" width="18" height="56" rx="3" fill="#f6b11f"/>
+                <rect x="120" y="56" width="18" height="74" rx="3" fill="#5b93ff"/>
+                <rect x="196" y="54" width="152" height="12" rx="6" fill="#f6b11f" opacity="0.92"/>
+                <rect x="196" y="80" width="126" height="10" rx="5" fill="#9bd60d" opacity="0.88"/>
+                <rect x="196" y="104" width="96" height="10" rx="5" fill="#7aa7ff" opacity="0.85"/>
+                <rect x="196" y="128" width="136" height="8" rx="4" fill="#ffffff" opacity="0.22"/>
+              </svg>
+              <span class="tag">Transparencia</span>
+            </div>
+            <div class="bd">
+              <h3>Publicado el presupuesto 2026</h3>
+              <p>Ya está disponible el detalle de ingresos y egresos conforme al Decreto 57-2008 (LAIP).</p>
+              <a href="#noticias" class="more">
+                <span>Leer más<span class="sr-only"> sobre Publicado el presupuesto 2026</span></span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6"/>
+                </svg>
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Region: transparencia -->
+    <section id="transparencia" class="sec transp" aria-labelledby="tit-transparencia" data-region="transparencia">
+      <div class="wrap">
+        <div class="sec-head" data-anim="section-head">
+          <h2 id="tit-transparencia" class="sec-title">Transparencia · Art. 10 LAIP</h2>
+          <p class="sec-sub">Consulta pública permanente conforme al Decreto 57-2008, Ley de Acceso a la Información Pública.</p>
+          <div class="rule" aria-hidden="true"></div>
+        </div>
+
+        <ul class="tlist">
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Estructura orgánica y funciones</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Presupuesto y ejecución del gasto</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Contrataciones y adquisiciones</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Sueldos y remuneraciones</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Actas del Concejo Municipal</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+          <li data-anim="transp-item">
+            <a href="#transparencia">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="tlist-label">Solicitud de información pública</span>
+              <svg class="tlist-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6"/>
+              </svg>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- Region: footer -->
+  <footer id="contacto" class="site-footer" data-region="footer">
+    <h2 class="sr-only">Información institucional y contacto</h2>
+    <div class="wrap footer-grid">
+      <div class="footer-col footer-about">
+        <div class="fb">
+          <svg width="34" height="40" viewBox="0 0 64 74" aria-hidden="true">
+            <path d="M32 3 60 12v26c0 18-13 29-28 33C17 67 4 56 4 38V12Z" fill="#1452c9" stroke="#f6b11f" stroke-width="3"/>
+            <path d="M16 50 28 32 37 44 43 36 50 50Z" fill="#9bd60d"/>
+          </svg>
+          <h3>MuniSoke GT</h3>
+        </div>
+        <p class="footer-line">
+          Municipalidad de Soke (ficticia)<br>
+          1a Calle 1-11, zona 1, Soke<br>
+          PBX: 0000-0000 · info@munisoke.gob.demo
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h3>Servicios</h3>
+        <ul class="footer-list">
+          <li><a href="#servicios">Multas PMT</a></li>
+          <li><a href="#servicios">Agua EMPASOKE</a></li>
+          <li><a href="#servicios">Boleto de Ornato</a></li>
+          <li><a href="#servicios">IUSI</a></li>
+          <li><a href="#servicios">Licencias</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h3>Enlaces</h3>
+        <ul class="footer-list">
+          <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#contacto">La Muni</a></li>
+          <li><a href="#transparencia">Transparencia</a></li>
+          <li><a href="#noticias">Noticias</a></li>
+          <li><a href="#servicios">Mi Portal</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="copy">
+      <div class="wrap copy-inner">
+        <span>© 2026 MuniSoke GT · portal ficticio de demostración</span>
+        <span>Caso ReVital · MUNI-GT</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
