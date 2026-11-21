@@ -104,7 +104,7 @@ for a in nuevas[-3:]:
 if not nuevas:
     print("  (sin alerta del FTP: revisa 'bash demo.sh estado')")
 PY
-  b "Listo en $((SECONDS - t0)) s. Recarga el panel: http://127.0.0.1:8765"
+  b "Listo en $((SECONDS - t0)) s. El panel se actualiza solo en unos segundos (no hace falta recargar)."
 }
 
 reiniciar() {

@@ -68,8 +68,9 @@ class Panel(object):
         if os.path.isdir(self.salida):
             for n in sorted(os.listdir(self.salida)):
                 if n.endswith((".json", ".jsonl", ".md")):
-                    try:
-                        partes.append("%s:%d" % (n, os.path.getmtime(os.path.join(self.salida, n))))
+                    try:  # hora en nanosegundos + tamano: el sentinela escribe varios archivos dentro del mismo segundo
+                        st = os.stat(os.path.join(self.salida, n))
+                        partes.append("%s:%d:%d" % (n, st.st_mtime_ns, st.st_size))
                     except OSError:
                         pass
         with self.lock:
