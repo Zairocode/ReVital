@@ -21,7 +21,7 @@ def cargar_reglas(path=None):
         return json.load(f)
 
 
-def componentes(inventarios, alias):
+def componentes(inventarios, alias, auto=None):
     """Une los componentes de varios inventarios (misma entidad) quitando duplicados.
     Mismo producto+version visto por varias fuentes -> una fila con todas las evidencias.
     'Drupal 7' (meta generator) se descarta si tambien se vio 'Drupal 7.57'; 'PHP' sin version, si se vio con version."""
@@ -29,11 +29,15 @@ def componentes(inventarios, alias):
     for inv in inventarios:
         for c in inv.get("components", []):
             oficial, cpes = normalizar.identificar(c["producto"], alias)
+            mapeo = "alias" if cpes else ""
+            if not cpes and auto:  # no esta en alias.json: probar el nombre tal cual contra NVD
+                cpes = auto.get(normalizar.clave(c["producto"]), [])
+                mapeo = "automatico" if cpes else ""
             nombre = oficial or c["producto"].strip()
             ver = (c.get("version") or "").strip()
             g = grupos.setdefault((normalizar.clave(nombre), ver), {
                 "producto": nombre, "detectado_como": c["producto"], "version": ver, "cpe": cpes,
-                "evidencia": []})
+                "mapeo": mapeo, "evidencia": []})
             ev = {"kind": inv.get("kind", ""), "target": inv.get("target", ""),
                   "fuente": c.get("fuente", ""), "donde": c.get("donde", "")}
             if ev not in g["evidencia"]:
@@ -83,7 +87,8 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
     """-> dict con componentes, hallazgos (confirmados), condicionales, posibles, eol y pendientes."""
     kev, nvd, idx = catalogo["kev"], catalogo["nvd"], catalogo["indice"]
     edb, mitig = catalogo.get("exploits", {}), reglas.get("mitigaciones", {})
-    res = {"componentes": componentes(inventarios, alias), "hallazgos": [], "condicionales": [],
+    auto = normalizar.indice_automatico(idx) if reglas.get("cruce_automatico", True) else None
+    res = {"componentes": componentes(inventarios, alias, auto), "hallazgos": [], "condicionales": [],
            "posibles": [], "eol": [], "configuracion": configuracion(inventarios, reglas), "notas_colectores": [],
            "sin_version": [], "sin_mapeo": []}
     res["notas_colectores"] = [c for c in res["configuracion"] if c["tipo"] == "nota"]
@@ -122,7 +127,8 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
                 k, n = kev.get(cve), nvd.get(cve, {})
                 h = {"cve": cve, "producto": comp["producto"], "version": ver, "evidencia": comp["evidencia"],
                      "en_kev": bool(k), "cvss": n.get("cvss"), "severidad": n.get("severidad", ""),
-                     "descripcion": n.get("descripcion", ""), "confianza": "posible" if rama else "confirmado"}
+                     "descripcion": n.get("descripcion", ""), "confianza": "posible" if rama else "confirmado",
+                     "mapeo": comp.get("mapeo", "")}
                 if k:
                     h.update(nombre=k.get("vulnerabilityName", ""), ransomware=k.get("knownRansomwareCampaignUse", ""),
                              agregado_kev=k.get("dateAdded", ""), fecha_limite=k.get("dueDate", ""),

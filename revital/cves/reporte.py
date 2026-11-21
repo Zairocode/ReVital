@@ -195,11 +195,14 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
     L += ["## 8. Inventario", "", "| Componente | Version | Detectado como | Fuente | Donde |", "|---|---|---|---|---|"]
     for c in res["componentes"]:
         for e in c["evidencia"]:
-            L.append("| %s | %s | %s | %s (%s) | %s |" % (c["producto"], c["version"] or "?", c["detectado_como"],
+            L.append("| %s | %s | %s | %s (%s) | %s |" % (c["producto"], c["version"] or "?",
+                                                         c["detectado_como"] + (" (cruce automatico NVD: %s)" % ", ".join(c["cpe"])
+                                                                                if c.get("mapeo") == "automatico" else ""),
                                                          _celda(e["fuente"]), e["kind"], _celda(e["donde"])))
     L += ["", "## Metodo", "",
           "1. Los colectores detectan producto y version, con su fuente y lugar como evidencia.",
-          "2. Cada producto se traduce al nombre oficial de NVD (CPE) con `alias.json`.",
+          "2. Cada producto se traduce al nombre oficial de NVD (CPE) con `alias.json`; si no esta ahi, se busca su nombre "
+          "exacto entre los productos de NVD (cruce automatico, marcado en el inventario).",
           "3. Se buscan los CVE cuyo rango de versiones afectadas (NVD) incluye la version detectada.",
           "4. Se marca cuales estan en el catalogo CISA KEV (explotacion activa confirmada).",
           "5. Prioridad: KEV + ransomware > KEV con fecha vencida > KEV > exploit publico en Exploit-DB > "
