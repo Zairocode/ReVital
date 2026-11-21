@@ -1,25 +1,42 @@
 # ReVital
 
-Documenta apps web legacy (gobierno), genera reportes y recomienda qué CVEs y reglas CISA (KEV) priorizar para parchear. Pensado para correr en tecnología vieja (Windows viejo; Linux viejo fuera de scope por ahora).
+Se suelta sobre una app, un servidor o una institución, documenta qué tecnología hay (aunque sea legacy), y recomienda qué CVEs y reglas CISA (KEV) priorizar para parchear. Entrega un `.md`/`.txt` por entidad con inventario y cumplimiento.
 
-Solo stdlib de Python 3.8+ (corre en Windows 7). Usar solo contra sistemas propios o con autorización.
+Solo stdlib de Python 3.8+ (corre en Windows 7). Linux viejo: fuera de scope por ahora. Usar solo contra sistemas propios o con autorización.
 
-## Flujo
-`crawler` -> `salida/reporte.json` -> `reglas-cisa-cves` -> recomendaciones de parcheo
+## Arquitectura
+```
+ colectores (cada uno -> salida/inventario-<kind>.json, formato en revital/inventory.py)
+   web     : crawler de URL                       (rama crawler)
+   red     : rango/hosts de una institución       (rama crawler)
+   codigo  : carpeta de una app legacy            (rama directorios)
+   host    : equipo/servidor Windows viejo local  (rama adaptaciones-windows)
+        │
+        ▼
+ evaluación: componentes -> CVE (NVD) -> ¿en CISA KEV?    (rama reglas-cisa-cves)
+        │
+        ▼
+ reporte por entidad: salida/reporte-<entidad>.md
+   inventario + hallazgos priorizados + cumplimiento
+```
 
-## Estructura y ramas (una por integrante, cada una toca su carpeta)
+## Contrato (`inventory.py`)
+`{kind, target, entidad, generado, components:[{producto, version, fuente, donde}], extra:{}}`
+Los colectores solo llenan `components` (y lo que quieran en `extra`). Nadie lee el JSON de otro más allá de esto.
+
+## Ramas (cada una toca su carpeta)
 | Rama | Carpeta | Qué |
 |---|---|---|
-| `crawler` | `revital/crawler.py` | Crawler + reporte.json/.md |
-| `reglas-cisa-cves` | `revital/cves/` | Cruce con catálogo CISA KEV y NVD (offline) |
-| `directorios` | `revital/dirs/` | Descubrimiento de directorios/rutas comunes y monitoreo |
-| `adaptaciones-windows` | `revital/compat/`, `scripts/` | Compatibilidad Windows/Linux viejos (TLS, Python viejo, .bat) |
+| `crawler` | `revital/crawler.py`, `revital/red.py` | Colector web y de red |
+| `directorios` | `revital/codigo.py` | Colector de carpeta/app: web.config, pom.xml, DLLs, composer.json... |
+| `adaptaciones-windows` | `revital/host.py`, `scripts/` | Colector de equipo local en Windows viejo + `.bat` + TLS/Python viejo |
+| `reglas-cisa-cves` | `revital/cves/` | Catálogos offline KEV/NVD, cruce y prioridad, reporte final |
 
-## Uso
+## Uso (objetivo)
 ```
-python -m revital.crawler https://app.interna.gob --insecure --out salida
-python -m revital.crawler --demo   # autocomprobación sin red
+python -m revital.crawler https://app.interna.gob --insecure --entidad MINFIN
+python -m revital.crawler --demo      # autocomprobación sin red
 ```
 
-## Flujo de trabajo
-Ramas cortas, PR a `main`, commits pequeños. Contrato entre módulos: `salida/reporte.json` (campos `start`, `pages[]`, `tech[]`).
+## Flujo de equipo
+Ramas cortas, PR a `main`, commits pequeños. Cambios al contrato van primero a `main`.
