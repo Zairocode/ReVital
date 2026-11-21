@@ -76,7 +76,7 @@ El resultado: sistemas expuestos con vulnerabilidades que **ya se están explota
 
 ```mermaid
 flowchart TD
-    subgraph C[Colectores — cada uno escribe salida/inventario-KIND.json]
+    subgraph C[Colectores — cada uno escribe salida/inventario-KIND-DESTINO.json]
         W[web<br/>crawler de URL<br/>rama crawler]
         R[red<br/>rango/hosts<br/>rama crawler]
         K[codigo<br/>carpeta de app legacy<br/>rama directorios]
@@ -95,7 +95,7 @@ flowchart TD
 Versión texto (por si el visor no muestra Mermaid):
 
 ```
- colectores (cada uno -> salida/inventario-<kind>.json)
+ colectores (cada uno -> salida/inventario-<kind>-<destino>.json)
    web     : crawler de URL                       (rama crawler)
    red     : rango/hosts de una institución       (rama crawler)
    codigo  : carpeta de una app legacy            (rama directorios)
@@ -110,7 +110,7 @@ Versión texto (por si el visor no muestra Mermaid):
 ```
 
 **Dos niveles de reporte:**
-- **Por colector** (documentación de lo que vio ese colector). Hoy el crawler ya genera `salida/reporte-<entidad>-web.md` con componentes, documentos enlazados, páginas y formularios.
+- **Por colector** (documentación de lo que vio ese colector). Hoy el crawler ya genera `salida/reporte-<entidad>-web-<destino>.md` con componentes, documentos enlazados, páginas y formularios.
 - **Final por entidad** `salida/reporte-<entidad>.md`: lo genera la evaluación uniendo todos los inventarios y agregando los CVE/KEV priorizados.
 
 ### Restricciones de diseño (no se negocian)
@@ -147,9 +147,9 @@ Está en `revital/inventory.py`. **Todo colector produce exactamente esto** y na
 - `donde`: **en qué lugar** (URL, ruta de archivo, host:puerto).
 - `extra`: libre para cada colector (páginas, formularios, puertos…); la evaluación no depende de él.
 
-Funciones disponibles: `nuevo(kind, target, entidad)`, `componente(producto, version, fuente, donde)`, `guardar(inv)` → `salida/inventario-<kind>.json`, `cargar_todos()` (lo usa la evaluación).
+Funciones disponibles: `nuevo(kind, target, entidad)`, `componente(producto, version, fuente, donde)`, `guardar(inv)` → `salida/inventario-<kind>-<destino>.json`, `cargar_todos()` (lo usa la evaluación).
 
-> ⚠️ **Cuidado:** `guardar()` nombra el archivo solo por `kind`. Si se corren dos colectores del mismo tipo (ej. dos portales web) sobre la misma carpeta `salida/`, el segundo **sobrescribe** al primero. Mientras no se cambie el contrato: usar `--out` distinto por cada objetivo (ej. `--out salida/portal1`).
+> **Nombre del archivo:** `guardar()` usa `inventario-<kind>-<destino>.json` (destino = `inventory.slug(target)`, ej. `localhost-8080`). Dos objetivos del mismo tipo no se pisan; volver a correr el mismo objetivo actualiza su archivo. `cargar_todos()` lee todos.
 
 **Regla:** si alguien necesita cambiar el contrato, el cambio va **primero a `main`** y se avisa al equipo.
 
@@ -158,7 +158,7 @@ Funciones disponibles: `nuevo(kind, target, entidad)`, `componente(producto, ver
 ## 7. Qué hace cada pieza
 
 ### 7.1 Colector web — rama `crawler` (`revital/crawler.py`) — ✅ funcionando
-Ya usa el contrato común: produce `salida/inventario-web.json` con `components[]` (producto y versión separados) y además un reporte propio del colector, `salida/reporte-<entidad>-web.md`.
+Ya usa el contrato común: produce `salida/inventario-web-<destino>.json` con `components[]` (producto y versión separados) y además un reporte propio del colector, `salida/reporte-<entidad>-web-<destino>.md`.
 
 **Recorre** las páginas del sitio (solo los hosts permitidos) y **detecta tecnología** por:
 - headers `Server`, `X-Powered-By`, `X-AspNet-Version`, `X-AspNetMvc-Version` (ej. `Microsoft-IIS` `6.0`);
@@ -256,7 +256,7 @@ python tests/test_crawler_local.py               # prueba contra un sitio legacy
 | `--delay S` | Pausa entre páginas (no saturar el servidor viejo) | 0.5 s |
 | `--timeout S` | Tiempo máximo por petición | 15 s |
 
-Salida: `salida/inventario-web.json` + `salida/reporte-<entidad>-web.md`.
+Salida: `salida/inventario-web-<destino>.json` + `salida/reporte-<entidad>-web-<destino>.md`.
 
 ---
 
@@ -294,7 +294,6 @@ Regla del evento: **"se enseña lo que funciona"**. Guion sugerido **(propuesta)
 |---|---|
 | El cruce producto→CVE no encuentra coincidencias | Tabla de alias controlada para la demo; probar temprano con la app de prueba |
 | Cada colector entrega un formato distinto | Contrato único en `inventory.py` (el crawler ya lo cumple; los demás deben copiar su patrón) |
-| Dos inventarios del mismo tipo se sobrescriben | `--out` distinto por objetivo, o ajustar el nombre en `guardar()` vía `main` |
 | Código que no corre en Windows 7 | Probar cada colector con Python 3.8 real antes de la demo |
 | Sin internet en la UVG | Catálogos offline, todo local |
 | Querer cubrir todo (4 colectores) y no cerrar ninguno | Prioridad: **web + código + evaluación + reporte** funcionando de punta a punta; red y host después |
