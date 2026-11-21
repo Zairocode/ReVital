@@ -18,16 +18,19 @@ def correr(out, entidad=None, datos=catalogo.DATOS, demo=False, hoy=None, entrad
     grupos = evaluar.por_entidad(inventory.cargar_todos(entrada), entidad)
     if not grupos:
         sys.exit("Ningun inventario es de la entidad '%s'" % entidad)
-    if cat["info"]["ejemplo"]:
-        print("AVISO: usando catalogos de ejemplo (datos/ vacio). Para datos reales: python -m revital.cves --actualizar")
+    i = cat["info"]
+    if i["ejemplo"] and not demo:
+        print("AVISO: usando catalogos de ejemplo (no hay catalogos/kev.json). Ver catalogos/LEEME.md")
+    print("KEV %s (%s) | NVD: %s (%d CVE) | Exploit-DB: %d CVE" % (
+        i["kev_version"], i["kev_fuente"], i["nvd_fuente"], i["nvd_cves"], i.get("exploitdb_cves", 0)))
     salidas = []
     for ent, invs in sorted(grupos.items()):
         res = evaluar.evaluar(invs, cat, alias, reglas, hoy)
         md, js = reporte.guardar(ent, invs, res, cat["info"], hoy, reglas, out)
         kev = [h for h in res["hallazgos"] if h["en_kev"]]
-        print("\n%s: %d componentes, %d KEV abiertos, %d otras, %d a verificar, %d fuera de soporte" % (
-            ent, len(res["componentes"]), len(kev), len(res["hallazgos"]) - len(kev), len(res["condicionales"]),
-            len(res["eol"])))
+        print("\n%s: %d componentes, %d KEV abiertos, %d otras, %d a verificar, %d fuera de soporte, "
+              "%d configuraciones inseguras" % (ent, len(res["componentes"]), len(kev), len(res["hallazgos"]) - len(kev),
+                                               len(res["condicionales"]), len(res["eol"]), len(res["configuracion"])))
         for h in kev:
             print("  [%s] %s  %s %s" % (h["nivel_txt"], h["cve"], h["producto"], h["version"]))
         print("  -> %s" % md)
@@ -44,6 +47,9 @@ def demo(out):
     assert "CVE-2024-38475" in {h["cve"] for h in res["condicionales"]}
     assert "CVE-2019-6340" not in {h["cve"] for h in res["hallazgos"] + res["condicionales"]}  # es de Drupal 8
     assert {"Drupal", "PHP"} <= {c["producto"] for c in res["eol"]}
+    h = {x["cve"]: x for x in res["hallazgos"]}
+    assert h["CVE-2021-41773"]["exploits"] and h["CVE-2021-41773"]["mitigacion"]   # Exploit-DB y mitigacion
+    assert "7.57" in h["CVE-2018-7600"]["parche"]                                  # parche desde el rango de NVD
     print("\nok")
 
 
@@ -51,13 +57,20 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="ReVital: cruce de inventarios con NVD y CISA KEV")
     ap.add_argument("--out", default="salida", help="carpeta con los inventario-*.json y donde se escribe el reporte")
     ap.add_argument("--entidad", help="solo esta entidad (por defecto, un reporte por cada entidad encontrada)")
-    ap.add_argument("--datos", default=catalogo.DATOS, help="carpeta con kev.json y nvd_min.json")
+    ap.add_argument("--datos", default=catalogo.DATOS, help="carpeta con el extra opcional nvd_min.json")
     ap.add_argument("--hoy", help="fecha de evaluacion YYYY-MM-DD (por defecto hoy)")
     ap.add_argument("--demo", action="store_true", help="caso de ejemplo, sin red")
-    ap.add_argument("--actualizar", action="store_true", help="descargar KEV y NVD (requiere internet)")
+    ap.add_argument("--actualizar", action="store_true",
+                    help="bajar de NVD todas las CVE de los productos de alias.json a datos/ (internet). "
+                         "KEV: python scripts/actualizar_catalogos.py")
+    ap.add_argument("--exploitdb", nargs="?", const="", metavar="CSV_O_URL",
+                    help="importar el indice de Exploit-DB (files_exploits.csv bajado con el navegador, o URL; "
+                         "sin valor lo baja de internet) a revital/cves/exploitdb.json")
     ap.add_argument("--productos", help="con --actualizar: solo estos productos, separados por coma (ej. drupal,php)")
     ap.add_argument("--insecure", action="store_true", help="con --actualizar: no verificar certificados TLS")
     a = ap.parse_args()
+    if a.exploitdb is not None:
+        sys.exit(0 if catalogo.importar_exploitdb(a.exploitdb or None, insecure=a.insecure) else 1)
     if a.actualizar:
         prods = {normalizar.clave(p) for p in a.productos.split(",")} if a.productos else None
         sys.exit(0 if catalogo.actualizar(a.datos, prods, a.insecure) else 1)

@@ -5,13 +5,15 @@ from revital.cves import normalizar, versiones
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
-NIVELES = {1: "CRITICO", 2: "URGENTE (vencido)", 3: "URGENTE", 4: "ALTO", 5: "MEDIO", 6: "BAJO"}
+NIVELES = {1: "CRITICO", 2: "URGENTE (vencido)", 3: "URGENTE", 4: "ALTO (exploit publico)", 5: "ALTO", 6: "MEDIO",
+           7: "BAJO"}
 MOTIVOS = {1: "En CISA KEV y usado en campanas de ransomware",
            2: "En CISA KEV y ya paso la fecha limite de CISA",
            3: "En CISA KEV: se explota activamente",
-           4: "No esta en KEV, pero CVSS critico",
-           5: "No esta en KEV, CVSS alto",
-           6: "No esta en KEV, CVSS medio o bajo"}
+           4: "No esta en KEV, pero hay codigo de ataque publico en Exploit-DB",
+           5: "No esta en KEV, pero CVSS critico",
+           6: "No esta en KEV, CVSS alto",
+           7: "No esta en KEV, CVSS medio o bajo"}
 
 
 def cargar_reglas(path=None):
@@ -48,28 +50,59 @@ def componentes(inventarios, alias):
     return sorted(out, key=lambda g: (g["producto"].lower(), versiones.partes(g["version"])))
 
 
-def nivel(en_kev, k, cvss, hoy, reglas):
+def nivel(en_kev, k, cvss, hoy, reglas, exploits=()):
     if en_kev:
         if k.get("knownRansomwareCampaignUse", "").lower() == "known":
             return 1
         if k.get("dueDate", "9999") < hoy:
             return 2
         return 3
+    if any(e[2] != "dos" for e in exploits):  # un exploit solo de denegacion de servicio no sube el nivel
+        return 4
     cvss = cvss or 0
-    return 4 if cvss >= reglas["umbral_alto"] else 5 if cvss >= reglas["umbral_medio"] else 6
+    return 5 if cvss >= reglas["umbral_alto"] else 6 if cvss >= reglas["umbral_medio"] else 7
+
+
+def parche(producto, rango, hermanos=()):
+    """Version corregida que se deduce del rango de NVD que hizo coincidir.
+    hermanos = los demas rangos de la misma CVE para el mismo producto (NVD lista versiones sueltas: 2.4.49, 2.4.50)."""
+    exactas = [r["version"] for r in hermanos if r.get("version")]
+    if rango.get("version") and exactas and len(exactas) == len(hermanos):
+        return "Actualizar %s a una version posterior a %s." % (producto, max(exactas, key=versiones.partes))
+    if rango.get("hasta_excl"):
+        return "Actualizar %s a %s o posterior." % (producto, rango["hasta_excl"])
+    if rango.get("hasta_incl"):
+        return "Actualizar %s a una version posterior a %s." % (producto, rango["hasta_incl"])
+    if rango.get("version"):
+        return "Actualizar %s: la version %s esta afectada; instalar la ultima version corregida de su rama." % (
+            producto, rango["version"])
+    return "Actualizar %s a la ultima version del fabricante." % producto
 
 
 def evaluar(inventarios, catalogo, alias, reglas, hoy):
     """-> dict con componentes, hallazgos (confirmados), condicionales, posibles, eol y pendientes."""
     kev, nvd, idx = catalogo["kev"], catalogo["nvd"], catalogo["indice"]
+    edb, mitig = catalogo.get("exploits", {}), reglas.get("mitigaciones", {})
     res = {"componentes": componentes(inventarios, alias), "hallazgos": [], "condicionales": [],
-           "posibles": [], "eol": [], "sin_version": [], "sin_mapeo": []}
+           "posibles": [], "eol": [], "configuracion": configuracion(inventarios, reglas), "notas_colectores": [],
+           "sin_version": [], "sin_mapeo": []}
+    res["notas_colectores"] = [c for c in res["configuracion"] if c["tipo"] == "nota"]
+    res["configuracion"] = [c for c in res["configuracion"] if c["tipo"] != "nota"]
+    protocolos = reglas.get("protocolos_obsoletos", {})
     for comp in res["componentes"]:
         ver = comp["version"]
+        proto = protocolos.get(normalizar.clave(comp["producto"]), {})
+        if proto:  # 'TLS 1.0' no es software con CVE: es un protocolo inseguro que el servidor acepta
+            if ver in proto:
+                res["configuracion"].append({"tipo": "Protocolo obsoleto",
+                                             "detalle": "El servidor acepta %s %s" % (comp["producto"], ver),
+                                             "recomendacion": proto[ver], "evidencia": comp["evidencia"]})
+            continue
         if not comp["cpe"]:
             res["sin_mapeo"].append(comp)
             continue
         fin = normalizar.eol(comp["producto"], ver, alias, hoy)
+        comp["eol"] = list(fin) if fin else None
         if fin:
             res["eol"].append(dict(comp, rama=fin[0], fin_soporte=fin[1]))
         if not ver or not versiones.valida(ver):
@@ -94,7 +127,13 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
                     h.update(nombre=k.get("vulnerabilityName", ""), ransomware=k.get("knownRansomwareCampaignUse", ""),
                              agregado_kev=k.get("dateAdded", ""), fecha_limite=k.get("dueDate", ""),
                              vencido=k.get("dueDate", "9999") < hoy, accion=k.get("requiredAction", ""))
-                h["nivel"] = nivel(bool(k), k or {}, h["cvss"], hoy, reglas)
+                h["exploits"] = edb.get(cve, [])
+                h["parche"] = parche(comp["producto"], rango, [r for c, r in idx.get(cpe, []) if c == cve])
+                if fin:
+                    h["parche"] += " La rama %s ya no tiene soporte desde %s: el parche no basta, planificar migracion." % fin
+                if cve in mitig:
+                    h["mitigacion"], h["regla"] = mitig[cve].get("mitigacion", ""), mitig[cve].get("regla", "")
+                h["nivel"] = nivel(bool(k), k or {}, h["cvss"], hoy, reglas, h["exploits"])
                 h["nivel_txt"], h["motivo"] = NIVELES[h["nivel"]], MOTIVOS[h["nivel"]]
                 if cve in reglas["condicionales"]:
                     h["condicion"] = reglas["condicionales"][cve]
@@ -108,6 +147,23 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
     for k in ("hallazgos", "condicionales", "posibles"):
         res[k].sort(key=orden)
     return res
+
+
+def configuracion(inventarios, reglas):
+    """Alertas de configuracion que los colectores dejan en extra.alertas (ej. web.config con debug=true)."""
+    out, recs, notas = [], reglas.get("alertas", {}), reglas.get("notas_colector", [])
+    for inv in inventarios:
+        for a in (inv.get("extra") or {}).get("alertas", []) or []:
+            low = a.lower()
+            ev = [{"kind": inv.get("kind", ""), "target": inv.get("target", ""),
+                   "fuente": "colector " + inv.get("kind", ""), "donde": inv.get("target", "")}]
+            tipo = "nota" if any(n in low for n in notas) else "Configuracion insegura"
+            rec = next((r for k, r in recs.items() if k in low.replace(" ", "").replace('"', "")
+                        or k in low), "")
+            item = {"tipo": tipo, "detalle": a, "recomendacion": rec, "evidencia": ev}
+            if item not in out:
+                out.append(item)
+    return out
 
 
 def por_entidad(inventarios, entidad=None):

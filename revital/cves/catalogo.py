@@ -1,21 +1,29 @@
 """Catalogos offline: CISA KEV (explotados activamente) y NVD (que versiones afecta cada CVE).
 
-datos/kev.json      = el JSON de CISA tal cual (navegador: Ctrl+S, o --actualizar)
-datos/nvd_min.json  = extracto de NVD en formato propio (lo genera --actualizar)
-datos/*.json        = respuestas crudas del API de NVD guardadas desde el navegador; se convierten solas
-Si datos/ esta vacio se usan los catalogos de ejemplo de ejemplos/ y el reporte lo avisa.
+Fuente principal (la del equipo, congelada en el repo por scripts/actualizar_catalogos.py):
+  catalogos/kev.json       catalogo CISA KEV completo
+  catalogos/nvd-kev.json   NVD de todas las CVE que estan en KEV: CVSS y versiones afectadas
+Extra opcional, local (no se sube al repo; lo genera --actualizar):
+  revital/cves/datos/nvd_min.json  NVD de TODAS las CVE (no solo KEV) de los productos de alias.json
+  revital/cves/datos/*.json        respuestas crudas del API de NVD guardadas desde el navegador
+Sin catalogos/ se usan los de ejemplos/ y el reporte lo avisa.
 """
-import json, os, ssl, sys, time
+import csv, io, json, os, re, ssl, sys, time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from revital.cves import normalizar
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+RAIZ = os.path.dirname(os.path.dirname(AQUI))
+CATALOGOS = os.path.join(RAIZ, "catalogos")
 DATOS = os.path.join(AQUI, "datos")
 EJEMPLOS = os.path.join(AQUI, "ejemplos")
-KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+# Exploit-DB: solo se lee su INDICE (que exploit publico existe para cada CVE). Nunca se descarga codigo de ataque.
+EXPLOITDB = os.path.join(AQUI, "exploitdb.json")
+EXPLOITDB_URLS = ("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv",  # oficial
+                  "https://lucacapacci.github.io/exploitdb/exploits.csv")                          # espejo por CVE
 
 
 def _leer(path):
@@ -23,10 +31,20 @@ def _leer(path):
         return json.load(f)
 
 
-# ---------- NVD: formato crudo del API 2.0 -> formato propio ----------
+def _severidad(cvss):
+    if cvss is None:
+        return ""
+    return "CRITICAL" if cvss >= 9 else "HIGH" if cvss >= 7 else "MEDIUM" if cvss >= 4 else "LOW"
+
+
+def _limpio(v):
+    return (v or "").replace("\\", "")
+
+
+# ---------- formatos de NVD -> formato propio {descripcion, cvss, severidad, afecta:[{cpe, version|rangos}]} ----------
 
 def convertir_nvd(cve):
-    """Un item 'cve' del API 2.0 de NVD -> (id, {descripcion, cvss, severidad, afecta:[{cpe, rango...}]})."""
+    """Un item 'cve' crudo del API 2.0 de NVD -> (id, {...})."""
     desc = next((d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"), "")
     cvss, sev = None, ""
     metricas = cve.get("metrics", {})
@@ -46,16 +64,32 @@ def convertir_nvd(cve):
                 p = cm["criteria"].split(":")
                 if len(p) < 7:
                     continue
-                r = {"cpe": normalizar.cpe_corto(p[3] + ":" + p[4])}
-                if p[5] not in ("*", "-"):
-                    r["version"] = p[5] + (p[6] if p[6] not in ("*", "-") else "")
-                for k_nvd, k in (("versionStartIncluding", "desde_incl"), ("versionStartExcluding", "desde_excl"),
-                                 ("versionEndIncluding", "hasta_incl"), ("versionEndExcluding", "hasta_excl")):
-                    if cm.get(k_nvd):
-                        r[k] = cm[k_nvd]
+                r = _rango(p[3], p[4], p[5], cm.get("versionStartIncluding"), cm.get("versionStartExcluding"),
+                           cm.get("versionEndIncluding"), cm.get("versionEndExcluding"),
+                           p[6] if p[6] not in ("*", "-") else "")
                 if r not in afecta:
                     afecta.append(r)
-    return cve["id"], {"descripcion": desc, "cvss": cvss, "severidad": sev, "afecta": afecta}
+    return cve["id"], {"descripcion": desc, "cvss": cvss, "severidad": sev or _severidad(cvss), "afecta": afecta}
+
+
+def _rango(vendor, producto, version, si, se, ei, ee, update=""):
+    r = {"cpe": normalizar.cpe_corto(vendor + ":" + producto)}
+    if version not in ("*", "-", ""):
+        r["version"] = _limpio(version) + update
+    for k, v in (("desde_incl", si), ("desde_excl", se), ("hasta_incl", ei), ("hasta_excl", ee)):
+        if v:
+            r[k] = _limpio(v)
+    return r
+
+
+def convertir_nvd_kev(d):
+    """catalogos/nvd-kev.json (formato del equipo: cpes = [vendor, producto, version, startInc, startExc, endInc, endExc])."""
+    out = {}
+    for cve, x in d.get("cves", {}).items():
+        afecta = [_rango(*c[:7]) for c in x.get("cpes", []) if len(c) >= 7]
+        out[cve] = {"descripcion": "", "cvss": x.get("cvss") or None, "severidad": _severidad(x.get("cvss") or None),
+                    "afecta": afecta}
+    return out
 
 
 def es_nvd_crudo(d):
@@ -65,35 +99,93 @@ def es_nvd_crudo(d):
 
 # ---------- carga ----------
 
-def cargar(datos=DATOS, demo=False):
-    """-> {'kev': {cveID: entrada}, 'nvd': {cveID: {...}}, 'info': {...}}"""
+def cargar(datos=DATOS, demo=False, catalogos=CATALOGOS):
+    """-> {'kev': {cveID: entrada}, 'nvd': {cveID: {...}}, 'indice': {cpe: [(cve, rango)]}, 'info': {...}}"""
     info = {"ejemplo": False, "kev_version": "", "kev_fecha": "", "nvd_fuente": "", "nvd_cves": 0}
-    kev_path = os.path.join(datos, "kev.json")
-    if demo or not os.path.exists(kev_path):
-        kev_path = os.path.join(EJEMPLOS, "kev_demo.json")
-        info["ejemplo"] = True
+    candidatos = [] if demo else [os.path.join(catalogos, "kev.json"), os.path.join(datos, "kev.json")]
+    kev_path = next((p for p in candidatos if os.path.exists(p)), None)
+    if not kev_path:
+        kev_path, info["ejemplo"] = os.path.join(EJEMPLOS, "kev_demo.json"), True
     kev_raw = _leer(kev_path)
     kev = {v["cveID"]: v for v in kev_raw["vulnerabilities"]}
     info["kev_version"], info["kev_fecha"] = kev_raw.get("catalogVersion", ""), kev_raw.get("dateReleased", "")[:10]
+    info["kev_fuente"] = os.path.relpath(kev_path, RAIZ)
 
     nvd, fuentes = {}, []
-    archivos = [] if demo or not os.path.isdir(datos) else sorted(os.listdir(datos))
-    for n in archivos:
-        if not n.endswith(".json") or n == "kev.json":
-            continue
-        d = _leer(os.path.join(datos, n))
-        if es_nvd_crudo(d):
-            nvd.update(convertir_nvd(x["cve"]) for x in d["vulnerabilities"])
-        elif isinstance(d, dict) and "cves" in d:
-            nvd.update(d["cves"])
-        else:
-            continue
-        fuentes.append(n)
+    if not demo:
+        p = os.path.join(catalogos, "nvd-kev.json")
+        if os.path.exists(p):
+            nvd.update(convertir_nvd_kev(_leer(p)))
+            fuentes.append("catalogos/nvd-kev.json")
+        for n in sorted(os.listdir(datos)) if os.path.isdir(datos) else []:
+            if not n.endswith(".json") or n == "kev.json":
+                continue
+            d = _leer(os.path.join(datos, n))
+            if es_nvd_crudo(d):
+                extra = dict(convertir_nvd(x["cve"]) for x in d["vulnerabilities"])
+            elif isinstance(d, dict) and "cves" in d and "descargado" not in d:
+                extra = d["cves"]
+            else:
+                continue
+            nvd.update(extra)  # datos/ trae descripcion y CVE fuera de KEV; pisa al extracto KEV-only
+            fuentes.append("revital/cves/datos/" + n)
     if not nvd:
         nvd = _leer(os.path.join(EJEMPLOS, "nvd_demo.json"))["cves"]
-        fuentes, info["ejemplo"] = ["ejemplos/nvd_demo.json"], True
+        fuentes, info["ejemplo"] = ["revital/cves/ejemplos/nvd_demo.json"], True
     info["nvd_fuente"], info["nvd_cves"] = ", ".join(fuentes), len(nvd)
-    return {"kev": kev, "nvd": nvd, "info": info, "indice": indexar(nvd)}
+    info["solo_kev"] = fuentes == ["catalogos/nvd-kev.json"]
+
+    edb_path = os.path.join(EJEMPLOS, "exploitdb_demo.json") if demo else EXPLOITDB
+    edb = _leer(edb_path) if os.path.exists(edb_path) else {"cves": {}}
+    info["exploitdb_fecha"], info["exploitdb_cves"] = edb.get("generado", ""), len(edb["cves"])
+    return {"kev": kev, "nvd": nvd, "info": info, "indice": indexar(nvd), "exploits": edb["cves"]}
+
+
+# ---------- Exploit-DB: CSV del indice -> {cve: [[id, verificado, tipo, fecha, titulo], ...]} ----------
+
+def indexar_exploitdb(texto_csv):
+    cves = {}
+    for fila in csv.DictReader(io.StringIO(texto_csv)):
+        codigos = (fila.get("codes") or "") + " " + (fila.get("description") or "")
+        for cve in set(re.findall(r"CVE-\d{4}-\d{4,}", codigos.upper())):
+            e = [int(fila["id"]), 1 if str(fila.get("verified", "")).strip() == "1" else 0, fila.get("type", ""),
+                 fila.get("date_published", ""), (fila.get("description") or "")[:100]]
+            lista = cves.setdefault(cve, [])
+            if all(x[0] != e[0] for x in lista):  # el espejo repite filas por etiqueta
+                lista.append(e)
+    for lista in cves.values():
+        lista.sort(key=lambda x: (-x[1], x[0]))  # verificados primero
+    return cves
+
+
+def importar_exploitdb(origen=None, destino=EXPLOITDB, insecure=False):
+    """origen = ruta a files_exploits.csv (bajado con el navegador) o URL; sin origen prueba EXPLOITDB_URLS."""
+    texto, usado = None, None
+    if origen and os.path.exists(origen):
+        with open(origen, encoding="utf-8", errors="replace") as f:
+            texto, usado = f.read(), origen
+    else:
+        ctx = ssl.create_default_context()
+        if insecure:
+            ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+        for url in ([origen] if origen else list(EXPLOITDB_URLS)):
+            print("Bajando indice de Exploit-DB: %s" % url)
+            try:
+                with urlopen(Request(url, headers={"User-Agent": "ReVital/0.1"}), timeout=180, context=ctx) as r:
+                    texto, usado = r.read().decode("utf-8", "replace"), url
+                break
+            except Exception as e:
+                print("  fallo: %s" % e)
+    if not texto:
+        print("No se pudo obtener el indice. Bajar files_exploits.csv con el navegador desde\n  %s\n"
+              "y correr: python -m revital.cves --exploitdb RUTA\\files_exploits.csv" % EXPLOITDB_URLS[0])
+        return False
+    cves = indexar_exploitdb(texto)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump({"generado": time.strftime("%Y-%m-%d"), "fuente": usado, "cves": cves}, f,
+                  ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    print("Listo: %s (%d CVE con exploit publico, %.1f MB)" % (destino, len(cves), os.path.getsize(destino) / 1e6))
+    return True
 
 
 def indexar(nvd):
@@ -105,7 +197,7 @@ def indexar(nvd):
     return idx
 
 
-# ---------- actualizar (requiere internet; correr en una maquina con red y copiar datos/) ----------
+# ---------- actualizar el extra de datos/ (requiere internet) ----------
 
 def _bajar(url, ctx, headers=None):
     req = Request(url, headers=dict({"User-Agent": "ReVital/0.1"}, **(headers or {})))
@@ -114,24 +206,19 @@ def _bajar(url, ctx, headers=None):
 
 
 def actualizar(datos=DATOS, productos=None, insecure=False):
-    """Baja KEV completo y, por cada producto de alias.json, los CVE de NVD que lo mencionan."""
+    """Baja de NVD todas las CVE (no solo KEV) de cada producto de alias.json -> datos/nvd_min.json.
+    KEV y el extracto KEV de NVD se actualizan con: python scripts/actualizar_catalogos.py"""
     ctx = ssl.create_default_context()
     if insecure:
         ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
     os.makedirs(datos, exist_ok=True)
-    print("Bajando CISA KEV...")
-    kev = _bajar(KEV_URL, ctx)
-    with open(os.path.join(datos, "kev.json"), "w", encoding="utf-8") as f:
-        json.dump(kev, f, ensure_ascii=False)
-    print("  %d vulnerabilidades, version %s" % (len(kev["vulnerabilities"]), kev.get("catalogVersion")))
-
     clave_api = os.environ.get("NVD_API_KEY", "")  # opcional; sin ella NVD permite pocas consultas por minuto
     pausa = 1 if clave_api else 6
     hdr = {"apiKey": clave_api} if clave_api else {}
     prods = normalizar.cargar_alias()[0]
     destino = os.path.join(datos, "nvd_min.json")
-    previo = _leer(destino)["cves"] if os.path.exists(destino) else {}
-    cves, fallos = dict(previo), []
+    cves = _leer(destino)["cves"] if os.path.exists(destino) else {}
+    fallos = []
     for oficial, d in prods.items():
         if productos and not ({normalizar.clave(n) for n in d["nombres"] + [oficial]} & productos):
             continue
@@ -156,6 +243,7 @@ def actualizar(datos=DATOS, productos=None, insecure=False):
     with open(destino, "w", encoding="utf-8") as f:
         json.dump({"generado": time.strftime("%Y-%m-%d %H:%M:%S"), "fuente": NVD_URL, "cves": cves}, f, ensure_ascii=False)
     print("Listo: %s (%d CVE)%s" % (destino, len(cves), "; fallaron: " + ", ".join(fallos) if fallos else ""))
+    print("KEV se actualiza aparte: python scripts/actualizar_catalogos.py")
     return not fallos
 
 
