@@ -16,9 +16,13 @@ hall = {"entidad": "MUNI-GT", "fecha_evaluacion": "2026-11-21", "catalogos": {"k
         "hallazgos": [{"cve": "CVE-2018-7600", "producto": "Drupal", "version": "7.57", "en_kev": True, "cvss": 9.8, "nivel": 1, "nivel_txt": "CRITICO",
                        "ransomware": "Known", "vencido": True, "accion": "Apply updates per vendor instructions.", "fecha_limite": "2022-05-03",
                        "agregado_kev": "2021-11-03", "nombre": "Drupalgeddon 2", "descripcion": "RCE <script>alert(1)</script>", "motivo": "KEV + ransomware",
-                       "confianza": "confirmado", "evidencia": [{"kind": "web", "donde": "/x", "fuente": "y"}]},
+                       "confianza": "confirmado", "evidencia": [{"kind": "web", "donde": "/x", "fuente": "y"}],
+                       "parche": "Actualizar Drupal a 7.58", "mitigacion": "Bloquear en el WAF",
+                       "regla": "SecRule ARGS_NAMES \"@contains #\" \"id:900100,deny\"",
+                       "exploits": [[44449, 1, "webapps", "2018-04-13", "Drupalgeddon2 <b>RCE</b>"]]},
                       {"cve": "CVE-2000-1", "producto": "Drupal", "version": "7.57", "en_kev": False, "cvss": 5.0, "nivel": 6, "nivel_txt": "BAJO", "evidencia": []}],
-        "condicionales": [], "eol": [{"producto": "Drupal", "version": "7.57"}], "sin_mapeo": []}
+        "condicionales": [], "eol": [{"producto": "Drupal", "version": "7.57"}], "sin_mapeo": [],
+        "configuracion": [{"tipo": "Configuracion insegura", "detalle": "web.config: debug=true", "recomendacion": "Apagar el modo debug", "evidencia": []}]}
 w("hallazgos-muni-gt.json", hall)
 w("reporte-muni-gt.md", "# Reporte ReVital: MUNI-GT\n\n| A | B |\n|---|---|\n| **uno** | `dos` |\n\n- item <b>x</b>\n")
 w("inventario-web-localhost-8080.json", {"kind": "web", "target": "http://localhost:8080", "entidad": "MUNI-GT", "components": []})
@@ -46,6 +50,10 @@ st, _, b = pedir("GET", "/"); assert st == 200 and b"MUNI-GT" in b and b"NO CUMP
 st, _, b = pedir("GET", "/e/muni-gt"); assert st == 200 and b"CVE-2018-7600" in b
 st, _, b = pedir("GET", "/e/muni-gt?tab=hallazgos"); assert st == 200 and b"EN KEV" in b and b"ransomware" in b
 assert b"<script>alert(1)</script>" not in b and b"&lt;script&gt;" in b, "la descripcion debe ir escapada (XSS)"
+for txt in (b"Actualizar Drupal a 7.58", b"Bloquear en el WAF", b"SecRule ARGS_NAMES", b"EDB-44449"):
+    assert txt in b, txt  # parche, mitigacion, regla copiable y exploits publicos
+assert b"<b>RCE</b>" not in b and b"&lt;b&gt;RCE" in b, "el titulo del exploit va escapado"
+st, _, r = pedir("GET", "/e/muni-gt"); assert b"Configuraci" in r and b"debug=true" in r and b"Apagar el modo debug" in r
 st, _, b = pedir("GET", "/e/muni-gt?tab=hallazgos&f=otras"); assert st == 200 and b"CVE-2000-1" in b and b"CVE-2018-7600" not in b
 for tab in ("inventario", "docs", "historial"):
     assert pedir("GET", "/e/muni-gt?tab=" + tab)[0] == 200, tab

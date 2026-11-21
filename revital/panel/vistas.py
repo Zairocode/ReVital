@@ -143,7 +143,7 @@ def _tabs(slug, tab):
                                                                ("docs", "Documentación"), ("historial", "Cambios")))
 
 
-def _hallazgo(x):
+def _hallazgo(x, abierto=False):
     ev = "".join("<li><code>%s</code> · %s · %s</li>" % (e(v.get("donde", "")), e(v.get("fuente", "")), e(v.get("kind", ""))) for v in x.get("evidencia", [])[:6])
     kev = ('<span class="chip" style="color:#fff;background:#7f1d1d">EN KEV</span> ' if x.get("en_kev") else "")
     rw = ('<span class="chip" style="color:#7f1d1d;background:#fee2e2">ransomware</span> ' if x.get("ransomware") == "Known" else "")
@@ -151,11 +151,31 @@ def _hallazgo(x):
     if x.get("en_kev"):
         extra = '<p><b>Qué hacer (CISA):</b> %s<br><span class="mut">Fecha límite de CISA: %s%s · en KEV desde %s</span></p>' % (
             e(x.get("accion", "")), e(x.get("fecha_limite", "")), " (<b>vencida</b>)" if x.get("vencido") else "", e(x.get("agregado_kev", "")))
-    return ('<details class="h"><summary>%s <b>%s</b> %s %s %s<span class="mut">%s %s · CVSS %s</span></summary><div class="cu">'
+    # lo accionable (lo que agrega revital.cves): como parchear, como mitigar mientras tanto, regla WAF copiable y exploits publicos
+    if x.get("parche"):
+        extra += '<p><b>Cómo parchear:</b> %s</p>' % e(x["parche"])
+    if x.get("mitigacion"):
+        extra += '<p><b>Mitigación mientras tanto:</b> %s</p>' % e(x["mitigacion"])
+    if x.get("regla"):
+        extra += '<p class="peq"><b>Regla lista para copiar:</b></p><pre>%s</pre>' % e(x["regla"])
+    exps = x.get("exploits") or []
+    if exps:
+        extra += ('<p class="peq"><b>Exploits públicos conocidos (%d, índice de Exploit-DB):</b> sirven para entender la urgencia; ReVital no los descarga ni los ejecuta.</p><ul class="peq">%s</ul>'
+                  % (len(exps), "".join("<li>EDB-%s · %s · %s</li>" % (e(str(z[0])), e(str(z[3])) if len(z) > 3 else "", e(str(z[4])) if len(z) > 4 else "") for z in exps[:5])))
+    return ('<details class="h"%s><summary>%s <b>%s</b> %s %s %s<span class="mut">%s %s · CVSS %s</span></summary><div class="cu">'
             '<p><b>%s</b></p><p>%s</p>%s<p class="mut peq"><b>Por qué esta prioridad:</b> %s · confianza: %s</p>'
             '<p class="peq"><b>Dónde lo vimos:</b></p><ul class="peq">%s</ul></div></details>'
-            % (chip(x.get("nivel_txt", "")), e(x["cve"]), kev, rw, "", e(x["producto"]), e(x["version"]), e(str(x.get("cvss", "-"))),
+            % (" open" if abierto else "", chip(x.get("nivel_txt", "")), e(x["cve"]), kev, rw, "", e(x["producto"]), e(x["version"]), e(str(x.get("cvss", "-"))),
                e(x.get("nombre") or x["cve"]), e((x.get("descripcion") or "")[:600]), extra, e(x.get("motivo", "")), e(x.get("confianza", "")), ev))
+
+
+def _config(items):
+    """Alertas de configuracion insegura (web.config con debug=true, TLS obsoleto...)."""
+    if not items:
+        return ""
+    return ("<h2>Configuración insegura detectada</h2>" + "".join(
+        '<div class="card" style="margin-bottom:10px"><b>%s</b> · %s<br><span class="mut peq">%s</span></div>'
+        % (e(i.get("tipo", "")), e(i.get("detalle", "")), ("Qué hacer: " + e(i["recomendacion"])) if i.get("recomendacion") else "") for i in items))
 
 
 def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
@@ -177,7 +197,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
                      for f, t in (("", "Todas"), ("kev", "Solo KEV (%d)" % r["kev"]), ("ransomware", "Con ransomware (%d)" % r["ransomware"]), ("otras", "No KEV (%d)" % r["otras"])))
         lim = len(hall) if todos else 60
         cuerpo = ("<p class=\"mut\">Ordenadas por prioridad. «KEV» = CISA confirma que se está explotando ahora mismo. Toca una fila para ver el detalle y la evidencia.</p>"
-                  + fl + "".join(_hallazgo(z) for z in hall[:lim]))
+                  + fl + "".join(_hallazgo(z, i == 0) for i, z in enumerate(hall[:lim])))
         if len(hall) > lim:
             cuerpo += '<p><a class="btn sec" href="/e/%s?tab=hallazgos&amp;f=%s&amp;todos=1">Mostrar las %d restantes</a></p>' % (e(x["slug"]), e(filtro), len(hall) - lim)
         cond = h.get("condicionales", [])
@@ -215,7 +235,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
         filas = "".join("<tr><td>%s</td><td><b>%s</b></td><td>%s %s</td><td class=\"peq\">%s</td></tr>" % (chip(z["nivel_txt"]), e(z["cve"]), e(z["producto"]), e(z["version"]), e(z.get("accion", ""))) for z in top)
         recientes = datos_alertas_mini(alertas)
         cuerpo = (msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
-                  '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s' % (ks, filas, e(x["slug"]), recientes))
+                  '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s%s' % (ks, filas, e(x["slug"]), _config(h.get("configuracion")), recientes))
     return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + cuerpo, "inicio")
 
 
