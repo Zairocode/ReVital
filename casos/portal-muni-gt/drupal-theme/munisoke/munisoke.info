@@ -1,5 +1,0 @@
-name = MuniSoke GT
-description = Portal de la muni ficticia MuniSoke GT (MUNI-GT) sobre Drupal 7. La portada (page--front.tpl.php) se genera desde branding/index.html con aplicar_branding.sh.
-core = 7.x
-base theme = bartik
-stylesheets[all][] = style.css
