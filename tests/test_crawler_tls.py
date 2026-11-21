@@ -51,6 +51,12 @@ viejo = servidor(ssl.TLSVersion.TLSv1, ssl.TLSVersion.TLSv1)
 if viejo is None:
     print("omitido el caso TLS 1.0: este Python/OpenSSL no puede ofrecer protocolos viejos")
     sys.exit(0)
+# Algunos sistemas (Fedora/RHEL con crypto-policies, Debian/Ubuntu endurecidos) prohiben TLS 1.0 para TODO programa aunque se baje el
+# nivel de seguridad. Se comprueba antes con un apreton de manos local: si el sistema no puede, la prueba se omite en vez de fallar.
+if "TLSv1.0" not in crawler.sondear_tls("127.0.0.1", viejo.server_port):
+    print("omitido el caso TLS 1.0: la politica criptografica de este sistema no permite TLS 1.0 "
+          "(en Fedora/RHEL: sudo update-crypto-policies --set LEGACY solo para probar). El crawler tampoco podria entrar a servidores asi desde esta maquina.")
+    sys.exit(0)
 url = "https://127.0.0.1:%d/" % viejo.server_port
 seguro = crawler.crawl(url, max_pages=3, delay=0, insecure=False)
 assert "error" in seguro["extra"]["pages"][0], seguro["extra"]["pages"][0]

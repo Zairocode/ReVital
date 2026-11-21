@@ -4,12 +4,13 @@ Solo stdlib, compatible con Python 3.8+ (Windows 7 en adelante).
 Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--scope host2,host3] [--out salida]
 Solo contra sistemas propios o con autorizacion.
 """
-import argparse, io, os, re, socket, ssl, sys, time, zipfile
+import argparse, io, os, re, socket, ssl, sys, time, zipfile, zlib
 from collections import Counter, deque
 from html.parser import HTMLParser
+from http.cookiejar import CookieJar
 from urllib.parse import urljoin, urlparse, urldefrag, urlunparse
-from urllib.request import Request, build_opener, HTTPRedirectHandler, HTTPSHandler
-from urllib.error import HTTPError
+from urllib.request import Request, build_opener, HTTPCookieProcessor, HTTPRedirectHandler, HTTPSHandler
+from urllib.error import HTTPError, URLError
 
 from revital import inventory
 
@@ -29,6 +30,55 @@ SERVER_RE = re.compile(r"(Apache Tomcat|Apache|Microsoft-IIS|nginx|Jetty|JBoss|W
 DOC_EXT = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".rtf", ".zip", ".rar"}
 SKIP_EXT = {".jpg", ".jpeg", ".png", ".gif", ".ico", ".css", ".js", ".svg", ".mp3", ".mp4", ".avi", ".woff", ".ttf"}
 SESSION_PARAMS = {"jsessionid", "phpsessid", "sid", "aspsessionid", "sessionid"}
+
+# Muchos servidores (WAF, IIS viejo, Apache con reglas) rechazan a quien no parezca un navegador: sin UA de navegador, sin Accept, sin cookies.
+# Sigue siendo honesto: dice que es ReVital y solo lee. Se puede cambiar con --user-agent.
+CABECERAS = {"User-Agent": "Mozilla/5.0 (compatible; ReVital/0.1; solo-lectura)", "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+             "Accept-Language": "es,en;q=0.8", "Accept-Encoding": "gzip, deflate"}
+_JAR = CookieJar()  # sesion de este analisis: sitios que redirigen hasta que aceptas una cookie
+
+
+def _canon(netloc):
+    """Identidad de un sitio para el alcance: 'WWW.Ejemplo.com:80' == 'ejemplo.com'. El puerto 8080 u otro SI es otro sitio."""
+    n = netloc.lower().rsplit("@", 1)[-1].rstrip(".")
+    host, sep, port = n.partition(":")
+    if port in ("80", "443"):
+        n = host
+    return re.sub(r"^www\.", "", n)
+
+
+def _descomprimir(raw, enc):
+    """Si el servidor comprime (aunque no se lo hayamos pedido). Tope de 8 MB descomprimido contra bombas de compresion."""
+    enc = (enc or "").lower()
+    try:
+        if "gzip" in enc:
+            return zlib.decompressobj(16 + zlib.MAX_WBITS).decompress(raw, 8_000_000)
+        if "deflate" in enc:
+            try:
+                return zlib.decompressobj().decompress(raw, 8_000_000)
+            except zlib.error:
+                return zlib.decompressobj(-zlib.MAX_WBITS).decompress(raw, 8_000_000)
+    except zlib.error:
+        pass
+    return raw
+
+
+def causa(e):
+    """Por que no se pudo conectar, en palabras de una persona (no 'urlopen error timed out')."""
+    r = getattr(e, "reason", e)
+    if isinstance(r, socket.gaierror):
+        return "no se pudo resolver el nombre del sitio (DNS): revisa que este bien escrito"
+    if isinstance(r, ConnectionRefusedError):
+        return "conexion rechazada: no hay ningun servicio escuchando en ese puerto"
+    if isinstance(r, (socket.timeout, TimeoutError)) or "timed out" in str(r):
+        return "tiempo agotado: el servidor no responde o un firewall descarta la conexion (prueba otra red; con curl ocurre lo mismo si no es de ReVital)"
+    if isinstance(r, ssl.SSLCertVerificationError):
+        return "el certificado no es valido (autofirmado, vencido o de otro nombre): usa --insecure si es un sistema propio"
+    if isinstance(r, ssl.SSLError):
+        return "fallo de TLS (%s): si es un servidor muy viejo prueba --insecure" % (getattr(r, "reason", None) or r)
+    if isinstance(e, HTTPError):
+        return "el servidor respondio HTTP %d" % e.code
+    return str(r)[:140]
 
 
 class Page(HTMLParser):
@@ -67,10 +117,10 @@ class Page(HTMLParser):
 class _Scope(HTTPRedirectHandler):
     """No sigue redirects a hosts fuera de scope (ni siquiera los contacta)."""
     def __init__(self, allowed):
-        self.allowed = allowed
+        self.allowed = allowed  # identidades de _canon()
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if urlparse(newurl).netloc.lower() not in self.allowed:
+        if _canon(urlparse(newurl).netloc) not in self.allowed:
             return None
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
@@ -88,8 +138,8 @@ def decode(raw, ctype=""):
 
 def fetch(url, ctx, allowed, timeout=15, retries=2):
     """-> (status, headers, body, url_final). Reintenta fallos de red; los HTTP 4xx/5xx se devuelven tal cual."""
-    req = Request(url, headers={"User-Agent": "ReVital-crawler/0.1"})
-    opener = build_opener(HTTPSHandler(context=ctx), _Scope(allowed))
+    req = Request(url, headers=CABECERAS)
+    opener = build_opener(HTTPSHandler(context=ctx), HTTPCookieProcessor(_JAR), _Scope(allowed))
     for i in range(retries + 1):
         try:
             try:
@@ -99,7 +149,7 @@ def fetch(url, ctx, allowed, timeout=15, retries=2):
             ctype = r.headers.get("Content-Type", "")
             ok = ("html" in ctype or "xml" in ctype or ctype.startswith("text/")
                   or ctype.split(";")[0] in ("", "application/octet-stream"))  # legacy mal configurado
-            body = decode(r.read(2_000_000), ctype) if ok else ""
+            body = decode(_descomprimir(r.read(2_000_000), r.headers.get("Content-Encoding")), ctype) if ok else ""
             headers = dict(r.headers.items())
             headers["set-cookie"] = "\n".join(r.headers.get_all("Set-Cookie") or [])
             return r.getcode(), headers, body, r.geturl()
@@ -268,18 +318,45 @@ def sondear_tls(host, port, timeout=5):
     return aceptadas
 
 
+def completar_url(destino, ctx, timeout):
+    """'ejemplo.gob', '10.0.0.5:8080' o ' http://x/ ' -> (URL completa, nota). Sin esquema se prueba https y, si no hay, http.
+    La nota guarda por que fallo https (p. ej. certificado autofirmado): si http tambien falla, esa es la pista util."""
+    d = destino.strip()
+    if "://" in d:
+        return d, ""
+    sitio, nota = d.split("/")[0], ""
+    for esq in ("https", "http"):
+        try:
+            fetch("%s://%s/" % (esq, sitio), ctx, {_canon(sitio)}, min(timeout, 6), retries=0)
+            return "%s://%s" % (esq, d), ""
+        except Exception as e:
+            if esq == "https":
+                nota = causa(e)
+    return "http://" + d, nota
+
+
 def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5, max_docs=20):
     ctx = contexto_tls(insecure)
+    _JAR.clear()
+    start, nota_https = completar_url(start, ctx, timeout)
     start = normalize(start)
-    allowed = {urlparse(start).netloc.lower()} | {h.lower() for h in scope}
-    print("Recorriendo %s | hosts permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
+    allowed = {_canon(urlparse(start).netloc)} | {_canon(h) for h in scope}  # www.ejemplo.com y ejemplo.com son el mismo sitio
+    print("Recorriendo %s | sitios permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
+    try:  # prueba de vida: si el objetivo no responde, no se gastan decenas de peticiones con espera y se dice claro
+        fetch(start, ctx, allowed, timeout, retries=1)
+    except Exception as e:
+        inv = inventory.nuevo("web", start, entidad)
+        c = causa(e) + (" | al probar https: %s" % nota_https if nota_https else "")
+        inv["extra"] = {"tls": {"aceptadas": {}, "obsoletas": []}, "pages": [{"url": start, "error": c}], "documentos": [],
+                        "hosts_permitidos": sorted(allowed), "robots_disallow": [], "sitemap_urls": 0, "sin_respuesta": True, "causa": c}
+        return inv
     seen, queue, pages, tech, docs, patrones = set(), deque([start]), [], {}, set(), Counter()
     urls_map, disallow = descubrir(start, ctx, allowed, timeout)
     for prod, ver, fuente, donde in sondear(start, ctx, allowed, timeout):
         tech.setdefault((prod, ver, fuente), donde)
     for l in urls_map + [urljoin(start, d) for d in disallow if not re.search(r"[*$?]", d)]:
         l = normalize(l)
-        if urlparse(l).netloc.lower() in allowed:
+        if _canon(urlparse(l).netloc) in allowed:
             queue.append(l)
     try:
         while queue and len(pages) < max_pages:
@@ -290,11 +367,11 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
             try:
                 status, headers, body, final = fetch(url, ctx, allowed, timeout)
             except Exception as e:  # ponytail: un error por pagina no tumba el crawl; se reporta
-                pages.append({"url": url, "error": str(e)})
+                pages.append({"url": url, "error": causa(e)})
                 continue
             loc = urljoin(url, headers.get("Location", "")) if 300 <= status < 400 else final
-            if urlparse(loc).netloc.lower() not in allowed:
-                pages.append({"url": url, "error": "fuera de scope: redirige a " + loc})
+            if _canon(urlparse(loc).netloc) not in allowed:
+                pages.append({"url": url, "error": "fuera de scope: redirige a %s (si es parte del mismo sistema, agrega --scope %s)" % (loc, urlparse(loc).netloc)})
                 continue
             p = Page()
             p.feed(body)
@@ -305,7 +382,7 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
                 l = normalize(urljoin(url, l))
                 u = urlparse(l)
                 ext = os.path.splitext(u.path)[1].lower()
-                if not l.startswith("http") or u.netloc not in allowed or l in seen or ext in SKIP_EXT:
+                if not l.startswith("http") or _canon(u.netloc) not in allowed or l in seen or ext in SKIP_EXT:
                     continue
                 if ext in DOC_EXT:
                     docs.add(l)
@@ -318,10 +395,10 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
             time.sleep(delay)
     except KeyboardInterrupt:
         print("Interrumpido: se guarda lo recorrido hasta ahora")
-    opener = build_opener(HTTPSHandler(context=ctx), _Scope(allowed))
+    opener = build_opener(HTTPSHandler(context=ctx), HTTPCookieProcessor(_JAR), _Scope(allowed))
     for d in sorted(docs)[:max_docs]:  # ponytail: solo los primeros max_docs; subir si hace falta
         try:
-            raw = opener.open(Request(d, headers={"User-Agent": "ReVital-crawler/0.1"}), timeout=timeout).read(3_000_000)
+            raw = opener.open(Request(d, headers=dict(CABECERAS, **{"Accept-Encoding": "identity"})), timeout=timeout).read(3_000_000)
         except Exception:
             continue
         for prod, ver in meta_documento(raw, d):
@@ -342,6 +419,9 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
     inv["extra"]["hosts_permitidos"] = sorted(allowed)
     inv["extra"]["robots_disallow"] = disallow
     inv["extra"]["sitemap_urls"] = len(urls_map)
+    if not any("status" in p for p in pages):  # ninguna pagina respondio (p. ej. redirige fuera del alcance): no es "sin hallazgos"
+        inv["extra"]["sin_respuesta"] = True
+        inv["extra"]["causa"] = next((p["error"] for p in pages if "error" in p), "ninguna pagina respondio")
     return inv
 
 
@@ -414,4 +494,6 @@ if __name__ == "__main__":
     md = os.path.join(a.out, "reporte-%s-web-%s.md" % (a.entidad or "sin-entidad", inventory.slug(res["target"])))
     with open(md, "w", encoding="utf-8") as f:
         f.write(to_markdown(res))
+    if res["extra"].get("sin_respuesta"):  # nunca presentar un fallo como "sin hallazgos"
+        sys.exit("NO RESPONDIO: %s -> %s\nNo se analizo nada. El reporte dira 'sin datos', no 'cumple'. (Guardado en %s)" % (res["target"], res["extra"]["causa"], j))
     print("listo: %s y %s (%d componentes)" % (j, md, len(res["components"])))

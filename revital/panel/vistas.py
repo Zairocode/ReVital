@@ -87,7 +87,8 @@ body,.btn,input[type=text],select,.tb{font-family:"Instrument Sans","Segoe UI",s
 .pills{display:flex;flex-wrap:wrap;align-items:center;margin:6px 0 14px}
 .pill{display:inline-flex;align-items:center;background:#1a1a1c;color:#c9c9ce;border-radius:999px;padding:8px 16px;margin:0 8px 8px 0;font-weight:600;font-size:14px}
 .pill:hover{color:#fff;background:#232326} .pill.act{background:#fbf6df;color:#0e0e0f}
-.pt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px} .pt.mal{background:#ff5a3c} .pt.bien{background:#34c38f}
+.pt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px} .pt.mal{background:#ff5a3c} .pt.bien{background:#34c38f} .pt.nd{background:#6b6b70}
+.nd-t{font-size:10px;color:#8a8a8f;margin-left:8px;font-weight:700;letter-spacing:.4px} .pill.act .nd-t{color:#55554c}
 .ent-cab{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:4px 0 4px}
 .ent-cab h2{margin:0;font-size:22px}
 .escaneo{display:flex;align-items:center;background:#1a1a1c;border-radius:20px;padding:16px 20px;margin:0 auto 12px;max-width:960px}
@@ -150,7 +151,9 @@ def kpi(n, texto, clase="neu"):
     return '<div class="k %s"><div class="n">%s</div><div class="t">%s</div></div>' % (clase, e(str(n)), e(texto))
 
 
-def estado_chip(cumple):
+def estado_chip(cumple, sin_datos=False):
+    if sin_datos:
+        return '<span class="estado" style="background:#26262a;color:#c9c9ce">SIN DATOS</span>'
     return '<span class="estado si">CUMPLE</span>' if cumple else '<span class="estado no">NO CUMPLE</span>'
 
 
@@ -180,13 +183,22 @@ def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
         return pagina("Inicio", "".join(b), "inicio")
     x = next((z for z in ents if z["slug"] == sel), ents[0])
     b.append('<div class="pills anim">%s</div>' % "".join(
-        '<a class="pill%s" href="/?e=%s"><i class="pt %s"></i>%s</a>' % (" act" if z is x else "", e(z["slug"]), "bien" if z["r"]["cumple"] else "mal", e(z["entidad"]))
+        '<a class="pill%s" href="/?e=%s"><i class="pt %s"></i>%s%s</a>' % (" act" if z is x else "", e(z["slug"]),
+                                                                      "nd" if z["r"].get("sin_datos") else ("bien" if z["r"]["cumple"] else "mal"),
+                                                                      e(z["entidad"]), ' <span class="nd-t">%s</span>' % ("SIN DATOS" if z["r"].get("sin_datos") else ("CUMPLE" if z["r"]["cumple"] else "NO CUMPLE")))
         for z in ents))
     h, r = x["h"], x["r"]
     b.append('<div class="ent-cab anim"><div><h2>%s</h2><p class="sub" style="margin:2px 0 0">Evaluado el %s · catálogo CISA KEV %s · %d componentes</p></div>'
              '<div>%s &nbsp; <a class="btn sec" href="/e/%s?tab=hallazgos">Ver detalle</a> <a class="btn sec" href="/zip/%s">Descargar (.zip)</a></div></div>'
              % (e(x["entidad"]), e(h.get("fecha_evaluacion", "")), e(h.get("catalogos", {}).get("kev_version", "?")), r["componentes"],
-                estado_chip(r["cumple"]), e(x["slug"]), e(x["slug"])))
+                estado_chip(r["cumple"], r.get("sin_datos")), e(x["slug"]), e(x["slug"])))
+    if r.get("sin_datos"):  # un fallo nunca se presenta como "cumple" ni con un tablero verde
+        b.append('<div class="aviso mal anim"><b>SIN DATOS: no se pudo evaluar.</b> No se detecto ningun componente (el objetivo no respondio o no '
+                 'se pudo leer). Esto <b>no</b> significa que este libre de vulnerabilidades. Revisa el detalle y vuelve a analizar.</div>')
+        return pagina("Inicio", "".join(b), "inicio")
+    if h.get("sin_respuesta"):
+        b.append('<div class="aviso mal anim"><b>Resultado incompleto:</b> %s no respondio. Los datos de ese objetivo faltan; no lo des por seguro.</div>'
+                 % ", ".join("<code>%s</code>" % e(z.get("target", "")) for z in h["sin_respuesta"]))
     b.append(tablero.html_tablero(h))
     top = [z for z in sorted(h.get("hallazgos", []), key=lambda z: (datos.ORDEN_NIVEL.get(z.get("nivel_txt"), 9), -float(z.get("cvss") or 0))) if z.get("en_kev")][:5]
     if top:
@@ -255,7 +267,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro="", vigilada=Fa
            '<div><h1>%s</h1><p class="sub" style="margin:0">Evaluado el %s · catálogo CISA KEV %s · %d componentes analizados</p></div>'
            '<div>%s%s &nbsp; <a class="btn" href="/zip/%s">Descargar documentación (.zip)</a></div></div>'
            % (e(x["slug"]), e(x["entidad"]), e(h.get("fecha_evaluacion", "")), e(h.get("catalogos", {}).get("kev_version", "?")), r["componentes"],
-              vig, estado_chip(r["cumple"]), e(x["slug"])))
+              vig, estado_chip(r["cumple"], r.get("sin_datos")), e(x["slug"])))
     if alertas and tab == "resumen":
         a = alertas[0]
         cab += ('<div class="aviso %s anim" style="margin-top:14px"><b>Último cambio (%s):</b> %s · <a href="/e/%s?tab=historial">ver todos los cambios</a></div>'
@@ -310,6 +322,13 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro="", vigilada=Fa
                       kpi(r["condicionales"], "dependen de configuración"), kpi(r["eol"], "fuera de soporte", "med" if r["eol"] else "bien")))
         filas = "".join("<tr><td>%s</td><td><b>%s</b></td><td>%s %s</td><td class=\"peq\">%s</td></tr>" % (chip(z["nivel_txt"]), e(z["cve"]), e(z["producto"]), e(z["version"]), e(z.get("accion", ""))) for z in top)
         recientes = datos_alertas_mini(alertas)
+        if r.get("sin_datos"):
+            return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + '<div class="aviso mal"><b>SIN DATOS: no se pudo evaluar.</b> '
+                          'No se detecto ningun componente (el objetivo no respondio o no se pudo leer). Esto <b>no</b> significa que este libre de '
+                          'vulnerabilidades. Revisa la pestana Documentacion para ver el error y vuelve a analizar.</div>', "inicio")
+        if h.get("sin_respuesta"):
+            msg = ('<div class="aviso mal"><b>Resultado incompleto:</b> %s no respondio. Los datos de ese objetivo faltan; no lo des por seguro.</div>'
+                   % ", ".join("<code>%s</code>" % e(z.get("target", "")) for z in h["sin_respuesta"])) + msg
         cuerpo = (tablero.html_tablero(h) + msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
                   '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s%s' % (ks, filas, e(x["slug"]), _config(h.get("configuracion")), recientes))
     return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + cuerpo, "inicio")
