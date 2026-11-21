@@ -3,7 +3,7 @@ import io, json, os, time, zipfile
 
 from revital import inventory
 
-ORDEN_NIVEL = {"CRITICO": 0, "URGENTE (vencido)": 1, "URGENTE": 2, "ALTO": 3, "MEDIO": 4, "BAJO": 5}
+ORDEN_NIVEL = {"CRITICO": 0, "URGENTE (vencido)": 1, "URGENTE": 2, "ALTO (exploit publico)": 3, "ALTO": 4, "MEDIO": 5, "BAJO": 6}
 
 
 def leer(path, defecto=None):

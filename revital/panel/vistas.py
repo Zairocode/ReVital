@@ -3,11 +3,11 @@ en navegadores viejos y sin conexion."""
 import html, re
 from urllib.parse import quote
 
-from revital.panel import datos
+from revital.panel import datos, tablero
 
 e = html.escape
 COLOR = {"CRITICO": ("#ffffff", "#b91c1c"), "URGENTE (vencido)": ("#ffffff", "#c2410c"), "URGENTE": ("#ffffff", "#d97706"),
-         "ALTO": ("#78350f", "#fde68a"), "MEDIO": ("#1e3a8a", "#dbeafe"), "BAJO": ("#334155", "#e2e8f0")}
+         "ALTO (exploit publico)": ("#ffffff", "#b45309"), "ALTO": ("#78350f", "#fde68a"), "MEDIO": ("#1e3a8a", "#dbeafe"), "BAJO": ("#334155", "#e2e8f0")}
 SEV_ALERTA = {"critica": ("#ffffff", "#b91c1c"), "alta": ("#ffffff", "#c2410c"), "media": ("#78350f", "#fde68a"), "info": ("#334155", "#e2e8f0")}
 
 CSS = """
@@ -234,7 +234,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
                       kpi(r["condicionales"], "dependen de configuración"), kpi(r["eol"], "fuera de soporte", "med" if r["eol"] else "bien")))
         filas = "".join("<tr><td>%s</td><td><b>%s</b></td><td>%s %s</td><td class=\"peq\">%s</td></tr>" % (chip(z["nivel_txt"]), e(z["cve"]), e(z["producto"]), e(z["version"]), e(z.get("accion", ""))) for z in top)
         recientes = datos_alertas_mini(alertas)
-        cuerpo = (msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
+        cuerpo = (tablero.html_tablero(h) + msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
                   '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s%s' % (ks, filas, e(x["slug"]), _config(h.get("configuracion")), recientes))
     return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + cuerpo, "inicio")
 
