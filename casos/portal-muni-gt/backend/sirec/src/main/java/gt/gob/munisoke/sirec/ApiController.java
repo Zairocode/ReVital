@@ -100,7 +100,7 @@ public class ApiController {
     public ResponseEntity<Object> iusi(@RequestParam(value = "finca", required = false) String finca, HttpServletRequest req) {
         LOG.info("Consulta IUSI finca=" + finca + " desde " + req.getHeader("X-Forwarded-For"));
         if (finca == null || !FINCA.matcher(finca.trim()).matches())
-            return error(HttpStatus.BAD_REQUEST, "finca_invalida", "Escribe el numero de finca como aparece en tu recibo, por ejemplo F-1024.");
+            return error(HttpStatus.BAD_REQUEST, "finca_invalida", "Escribe el número de finca como aparece en tu recibo, por ejemplo F-1024.");
         finca = finca.trim();
         try (Jedis r = redis.getResource()) {
             String c = r.get("iusi:" + finca);
@@ -113,7 +113,7 @@ public class ApiController {
             inm = jdbc.queryForMap("SELECT i.finca, i.zona, i.direccion, i.valor_fiscal, i.tasa_por_millar, i.iusi_anual, c.nombres, c.apellidos "
                     + "FROM inmuebles i JOIN contribuyentes c ON c.id = i.contribuyente_id WHERE i.finca = ?", finca);
         } catch (EmptyResultDataAccessException e) {
-            return error(HttpStatus.NOT_FOUND, "finca_no_encontrada", "No encontramos la finca " + finca + ". Revisa el numero en tu recibo.");
+            return error(HttpStatus.NOT_FOUND, "finca_no_encontrada", "No encontramos la finca " + finca + ". Revisa el número en tu recibo.");
         }
         List<Map<String, Object>> tri = new ArrayList<>();
         BigDecimal saldo = BigDecimal.ZERO;
@@ -172,15 +172,15 @@ public class ApiController {
         Pattern p = concepto == null ? null : "iusi".equals(concepto) ? FINCA : "ornato".equals(concepto) ? DPI
                 : "agua".equals(concepto) ? CONTADOR : "multa".equals(concepto) ? BOLETA : null;
         if (p == null)
-            return error(HttpStatus.BAD_REQUEST, "concepto_invalido", "Elige que quieres pagar: IUSI, boleto de ornato, agua o multa.");
+            return error(HttpStatus.BAD_REQUEST, "concepto_invalido", "Elige qué quieres pagar: IUSI, boleto de ornato, agua o multa.");
         String ref = referencia == null ? "" : referencia.trim();
         if (!p.matcher(ref).matches())
             return error(HttpStatus.BAD_REQUEST, "referencia_invalida", "La referencia no tiene el formato esperado para ese pago.");
         BigDecimal monto = montoPendiente(concepto, ref);
         if (monto == null)
-            return error(HttpStatus.NOT_FOUND, "referencia_no_encontrada", "No encontramos " + ref + " en el sistema de recaudacion.");
+            return error(HttpStatus.NOT_FOUND, "referencia_no_encontrada", "No encontramos " + ref + " en el sistema de recaudación.");
         if (monto.signum() == 0)
-            return error(HttpStatus.BAD_REQUEST, "sin_saldo", "No hay saldo pendiente para " + ref + ". Estas al dia.");
+            return error(HttpStatus.BAD_REQUEST, "sin_saldo", "No hay saldo pendiente para " + ref + ". Estás al día.");
         int n = jdbc.queryForObject("SELECT COUNT(*) FROM ordenes_pago", Integer.class) + 4501;
         String orden = String.format("OP-2026-%06d", n);
         LocalDate vence = hoy().plusDays(7);
@@ -204,11 +204,11 @@ public class ApiController {
         descripcion = descripcion == null ? "" : descripcion.trim();
         correo = correo == null || correo.trim().isEmpty() ? null : correo.trim();
         if (nombre.isEmpty() || descripcion.isEmpty())
-            return error(HttpStatus.BAD_REQUEST, "campo_obligatorio", "Escribe tu nombre y la informacion que solicitas.");
+            return error(HttpStatus.BAD_REQUEST, "campo_obligatorio", "Escribe tu nombre y la información que solicitas.");
         if (descripcion.length() < 10)
-            return error(HttpStatus.BAD_REQUEST, "descripcion_corta", "Describe con un poco mas de detalle la informacion que necesitas (minimo 10 caracteres).");
+            return error(HttpStatus.BAD_REQUEST, "descripcion_corta", "Describe con un poco más de detalle la información que necesitas (mínimo 10 caracteres).");
         if (descripcion.length() > 2000)
-            return error(HttpStatus.BAD_REQUEST, "descripcion_larga", "La descripcion es muy larga (maximo 2000 caracteres).");
+            return error(HttpStatus.BAD_REQUEST, "descripcion_larga", "La descripción es muy larga (máximo 2000 caracteres).");
         String ultimo = jdbc.queryForObject("SELECT MAX(folio) FROM solicitudes_laip WHERE folio LIKE 'LAIP-2026-%'", String.class);
         int n = ultimo == null ? 1 : Integer.parseInt(ultimo.substring(10)) + 1;
         String folio = String.format("LAIP-2026-%04d", n);
