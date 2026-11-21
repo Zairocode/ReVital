@@ -53,4 +53,11 @@ inv = inventory.nuevo("codigo", raiz, "MUNI-GT")
 inv["components"] = [inventory.componente(p, v, f, d) for (p, v, f), d in sorted(comps.items())]
 assert os.path.basename(inventory.guardar(inv, out)).startswith("inventario-codigo-")
 assert "log4j-core" in codigo.to_markdown(dict(inv, extra={"archivos_revisados": n, "alertas": alertas}))
+# pom.xml con la cabecera estandar de Maven (xmlns:xsi + xsi:schemaLocation): la que traen casi todos los proyectos reales
+deps, al = codigo.pom_xml('<?xml version="1.0" encoding="UTF-8"?>\n<project xmlns="http://maven.apache.org/POM/4.0.0" '
+                          'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 '
+                          'http://maven.apache.org/xsd/maven-4.0.0.xsd"><properties><struts.version>2.3.31</struts.version></properties>'
+                          '<dependencies><dependency><groupId>org.apache.struts</groupId><artifactId>struts2-core</artifactId>'
+                          '<version>${struts.version}</version></dependency></dependencies></project>')
+assert al == [] and ("struts2-core", "2.3.31", "dependency") in deps, (deps, al)
 print("ok", len(comps), "componentes,", n, "archivos")

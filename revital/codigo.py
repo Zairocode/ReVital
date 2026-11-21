@@ -57,6 +57,7 @@ def web_config(t):
 
 def pom_xml(t):
     t = re.sub(r"\sxmlns(:\w+)?=\"[^\"]*\"", "", t, count=0)  # sin namespaces para buscar simple
+    t = re.sub(r"\s[\w.-]+:[\w.-]+=\"[^\"]*\"", "", t)  # y sin atributos con prefijo (xsi:schemaLocation), que quedarian sin declarar
     try:
         raiz = ET.fromstring(t)
     except ET.ParseError:
