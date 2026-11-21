@@ -28,6 +28,9 @@ docker compose up -d --build
 ```
 
 ### Instalar Drupal (solo la primera vez)
+**Atajo automático (recomendado para la demo):** con el stack arriba, `bash instalar_drupal.sh`
+(deja Drupal 7.57 instalado, usuario `admin` / `admin`, solo local). Si prefieres el asistente web, sigue así:
+
 Drupal 7 no se autoinstala; hay que pasar por el asistente web **una vez**:
 
 1. Abrir `http://localhost:8080`

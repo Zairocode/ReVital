@@ -28,7 +28,7 @@ echo "-- Estado de Drupal --"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/")
 if echo "$loc" | grep -qi "install.php"; then
   echo "  / redirige a install.php => Drupal AUN NO esta instalado."
-  echo "  Corre el asistente web una vez (ver README) y vuelve a ejecutar este script."
+  echo "  Corre 'bash instalar_drupal.sh' (o el asistente web, ver README) y vuelve a ejecutar este script."
   pend "CVE-2018-7600 (Drupalgeddon 2): pendiente, falta instalar Drupal"
   pend "QA trafico legitimo: pendiente, falta instalar Drupal"
 else
