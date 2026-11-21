@@ -3,6 +3,12 @@
 > ✅ **Verificado en Docker (21-nov-2026):** levantan juntas `drupal:7.57`, `httpd:2.4.49` y `mariadb:10.5`.
 > El PoC de CVE-2021-41773 funciona por `/cgi-bin/`. Drupal hay que instalarlo una vez a mano (ver abajo).
 >
+> 🔧 **Arreglos tras el despliegue en phobos (sin volver a probar en Docker en esta edición):**
+> se quitó el volumen `drupal_files` (se creaba como root y rompía el instalador → ya no hace falta
+> `chown` a mano), y `verificar.sh` ahora **diagnostica** cuando el tráfico no pasa por el proxy
+> 2.4.49 (la causa de que en phobos saliera 2.4.10 y de que 41773 no se reprodujera). **Reverificar
+> con `docker compose up -d --build` + `bash verificar.sh` en el equipo de despliegue.**
+>
 > ⚠️ **Entorno deliberadamente vulnerable.** Correr solo en local/aislado. Nunca exponerlo a
 > internet ni apuntarlo a un sistema real del gobierno.
 
@@ -90,3 +96,12 @@ Para que se vea como un portal real: tras instalar, crear páginas "Transparenci
 - **Mac Apple Silicon lento o con warnings de plataforma:** descomentar los `platform: linux/amd64`.
 - **El sitio redirige raro detrás del proxy:** suele arreglarse dejando `ProxyPreserveHost On` (ya
   está) y accediendo siempre por `http://localhost:8080`.
+- **Sale `Apache/2.4.10` y CVE-2021-41773 no se reproduce (lo que pasó en phobos):** NO estás
+  llegando al proxy 2.4.49; el puerto publicado apunta directo a `drupal`. Confirma con
+  `docker compose ps` que el puerto está en `revital-proxy`, y revisa que ningún `compose.override.yml`
+  publique el puerto contra `drupal`. Recuerda: en páginas normales es **correcto** ver `2.4.10` (el
+  backend); el `2.4.49` del proxy se ve con una URL mal formada (`curl -I --path-as-is .../%zz`).
+- **El instalador no puede escribir en `sites/default/files`:** ya resuelto — se quitó el volumen
+  `drupal_files` del compose, así que el directorio usa los permisos de la imagen (`www-data`). Si
+  reaparece, no vuelvas a montar ese volumen o haz `chown -R www-data sites/default/files` en el
+  contenedor.
