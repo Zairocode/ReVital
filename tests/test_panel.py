@@ -80,7 +80,26 @@ assert pedir("POST", "/analizar", form)[0] == 400, "sin confirmar autorizacion n
 assert pedir("POST", "/analizar", "tipo=web&destino=file%3A%2F%2F%2Fetc%2Fpasswd&entidad=X&autorizo=1")[0] == 400
 assert pedir("POST", "/analizar", "tipo=web&destino=http%3A%2F%2Fa&entidad=%3Bcalc&autorizo=1")[0] == 400
 assert pedir("POST", "/analizar", "tipo=codigo&destino=C%3A%5Cno%5Cexiste&entidad=X&autorizo=1")[0] == 400
-assert pedir("GET", "/", extra={})[2].count(b"<script") == 0, "el panel no usa JavaScript"
+# JavaScript: solo archivos locales de /static (GSAP y panel.js); nada embebido ni de internet
+casa = pedir("GET", "/")[2]
+assert casa.count(b"<script") == casa.count(b'<script src="/static/') == 2, "solo scripts locales"
+assert b"http://" not in casa.split(b"<body>")[0] and b"https://" not in casa.split(b"<body>")[0], "nada se carga de internet"
+assert b"Revitaliza tu Sistema" in casa and b'name="autorizo" value="1"' in casa and b"Tengo autorizaci" not in casa
+st, h, b = pedir("GET", "/static/gsap.min.js"); assert st == 200 and "javascript" in h["Content-Type"] and b"GSAP" in b[:200]
+assert pedir("GET", "/static/instrument-sans-latin-400-normal.woff2")[0] == 200
+for malo in ("/static/..%2fapp.py", "/static/app.py", "/static/%2e%2e%2f%2e%2e%2fREADME.md", "/static/x.exe"):
+    assert pedir("GET", malo)[0] == 404, malo
+st, _, b = pedir("GET", "/api/estado"); assert st == 200 and "v" in json.loads(b)
+# un solo buscador: sin "tipo", una URL es web y lo demas es una carpeta
+assert pedir("POST", "/analizar", "destino=C%3A%5Cno%5Cexiste&entidad=X&autorizo=1")[0] == 400
+# vigilancia por entidad (interruptor)
+assert pedir("POST", "/vigilar", "slug=muni-gt&activar=1")[0] == 303
+cfg = json.load(open(os.path.join(salida, "vigilancia.json"), encoding="utf-8"))
+assert cfg["objetivos"] == [{"entidad": "MUNI-GT", "tipo": "web", "destino": "http://localhost:8080", "insecure": False}], cfg
+assert b"Vigilando cada hora" in pedir("GET", "/e/muni-gt")[2]
+assert pedir("POST", "/vigilar", "slug=muni-gt&activar=0")[0] == 303
+assert json.load(open(os.path.join(salida, "vigilancia.json"), encoding="utf-8"))["objetivos"] == []
+assert pedir("POST", "/vigilar", "slug=no-existe&activar=1")[0] == 404
 
 # el markdown mal formado no rompe nada
 assert "<table>" in vistas.md_a_html("| a |\n|---|\n| b |") and vistas.md_a_html("") == ""

@@ -64,17 +64,17 @@ def barra(n, total=24, estilo="seg", ancho=240):
     if estilo == "punto":
         paso = ancho / float(total)
         return '<svg width="%d" height="12">%s</svg>' % (ancho, "".join(
-            '<circle cx="%s" cy="6" r="4" fill="%s"/>' % (_f(paso * i + paso / 2), color(i)) for i in range(total)))
+            '<circle class="sg" cx="%s" cy="6" r="4" fill="%s"/>' % (_f(paso * i + paso / 2), color(i)) for i in range(total)))
     if estilo == "fino":
         paso = ancho / float(total)
         return '<svg width="%d" height="26">%s</svg>' % (ancho, "".join(
-            '<rect x="%s" y="0" width="%s" height="26" rx="1.500" fill="%s"/>' % (_f(paso * i), _f(paso * .55), color(i))
+            '<rect class="sg" x="%s" y="0" width="%s" height="26" rx="1.500" fill="%s"/>' % (_f(paso * i), _f(paso * .55), color(i))
             for i in range(total)))
     total = 6 if total > 6 else total  # estilo "seg": pocos trazos gruesos, como en un indicador de desgaste
     llenos = min(n, total)
     paso = ancho / float(total)
     return '<svg width="%d" height="10">%s</svg>' % (ancho, "".join(
-        '<rect x="%s" y="0" width="%s" height="10" rx="5" fill="%s"/>' % (
+        '<rect class="sg" x="%s" y="0" width="%s" height="10" rx="5" fill="%s"/>' % (
             _f(paso * i), _f(paso - 8), (ROJO if i < llenos else GRIS) if n else VERDE) for i in range(total)))
 
 
@@ -86,7 +86,7 @@ def anillo(ok, total, ticks=60, r=62):
         a = -math.pi / 2 + 2 * math.pi * i / ticks
         x1, y1 = c + (r - 12) * math.cos(a), c + (r - 12) * math.sin(a)
         x2, y2 = c + r * math.cos(a), c + r * math.sin(a)
-        out.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="3.200" stroke-linecap="round"/>' % (
+        out.append('<line class="tk" x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="3.200" stroke-linecap="round"/>' % (
             _f(x1), _f(y1), _f(x2), _f(y2), VERDE if i < verdes else ROJO))
     escudo = ('<g transform="translate(%s %s) scale(1.400)">%s</g>' % (_f(c - 19.6), _f(c - 19.6),
               ICONOS["escudo"].replace("#000", "#8a8a8f")))
@@ -105,7 +105,7 @@ def semicirculo(valor, bien):
     a = math.pi + math.pi * max(0.0, min(1.0, valor))
     nx, ny = cx + (r - 2) * math.cos(a), cy + (r - 2) * math.sin(a)
     col = VERDE if bien else ROJO
-    out.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="5" stroke-linecap="round"/>' % (
+    out.append('<line class="ag" x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="5" stroke-linecap="round"/>' % (
         _f(cx + (r - 22) * math.cos(a)), _f(cy + (r - 22) * math.sin(a)), _f(nx), _f(ny), col))
     out.append('<circle cx="%d" cy="%d" r="6" fill="%s"/>' % (cx, cy, col))
     out.append('<text x="%d" y="%d" text-anchor="middle" fill="%s" font-size="22" font-weight="700" '
@@ -135,7 +135,7 @@ def curva(conteos, ancho=430, alto=150):
                         'font-family="Segoe UI,Arial,sans-serif">%d</text>' % (_f(xs[i]), alto - 2, i) for i in range(0, n, 2))
     return ('<svg width="%d" height="%d"><defs><linearGradient id="tbg" x1="0" y1="0" x2="0" y2="1">'
             '<stop offset="0" stop-color="#ff5a3c" stop-opacity=".55"/><stop offset="1" stop-color="#ff5a3c" stop-opacity="0"/>'
-            '</linearGradient></defs><path d="%s" fill="url(#tbg)"/>%s<path d="%s" fill="none" stroke="%s" stroke-width="3"/>'
+            '</linearGradient></defs><path class="ar" d="%s" fill="url(#tbg)"/>%s<path class="tz" d="%s" fill="none" stroke="%s" stroke-width="3"/>'
             '<line x1="%s" y1="%s" x2="%s" y2="%d" stroke="#6b6b70" stroke-dasharray="3 4"/>'
             '<circle cx="%s" cy="%s" r="8" fill="#1a1a1c" stroke="#ff5a3c" stroke-width="2.500"/><circle cx="%s" cy="%s" r="4" fill="#ff5a3c"/>%s</svg>'
             % (ancho, alto, area, guias, d, ROJO, _f(xs[pico]), _f(ys[pico] + 9), _f(xs[pico]), alto - 18,
@@ -163,7 +163,7 @@ def lineas(etiquetas_x, series, ancho=470, alto=190):
                % (x0, y0, x0, y1, x0, y1, x1, y1))
     for _, color, vals in series:
         pts = " ".join("%s,%s" % (_f(px(i)), _f(py(v))) for i, v in enumerate(vals))
-        out.append('<polyline points="%s" fill="none" stroke="%s" stroke-width="3" stroke-linejoin="round"/>' % (pts, color))
+        out.append('<polyline class="tz" points="%s" fill="none" stroke="%s" stroke-width="3" stroke-linejoin="round"/>' % (pts, color))
     return '<svg width="%d" height="%d">%s</svg>' % (ancho, alto, "".join(out))
 
 
