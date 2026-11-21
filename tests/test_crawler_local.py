@@ -15,6 +15,8 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, '<a href="/ver?id=%d">sig</a>' % (n + 1))
         if p == "/fuera":                 # redirect a otro host
             self.send_response(302); self.send_header("Location", "http://example.invalid/"); self.end_headers(); return
+        if p == "/%zz":
+            return self.send(400, "<h1>Bad Request</h1>", {"Server": "Apache/2.4.49 (Unix)"})
         if p == "/robots.txt":
             return self.send(200, "User-agent: *\nDisallow: /admin/\nSitemap: http://%s/sitemap.xml" % self.headers["Host"], ctype="text/plain")
         if p == "/sitemap.xml":
@@ -51,6 +53,7 @@ assert any(d.endswith("informe.pdf") for d in inv["extra"]["documentos"])
 assert any(p["url"].endswith("/oculta") for p in pages) and ("Apache", "2.0.52") in prods, "sitemap no usado"
 assert inv["extra"]["robots_disallow"] == ["/admin/"], inv["extra"]["robots_disallow"]
 assert ("Drupal", "7.57") in prods and ("PHP", "5.2.17") in prods, prods
+assert ("Apache", "2.4.49") in prods, "sonda de error 400 del front no leida"
 assert ("Acrobat Distiller", "8.0.0") in prods, "metadato de documento no leido"
 assert not any("jsessionid" in p["url"] for p in pages)
 print("ok", len(pages), "paginas")

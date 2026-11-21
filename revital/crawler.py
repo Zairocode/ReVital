@@ -167,6 +167,14 @@ def sondear(start, ctx, allowed, timeout):
         m = re.search(rx, body) if st == 200 else None
         if m:
             out.append((prod, m.group(1), "archivo " + ruta, url))
+    # Detras de un proxy, el header Server de las paginas es el del backend. Una URL mal formada la contesta
+    # el servidor de enfrente con su propio error 400: ahi si aparece su version real.
+    try:
+        _, h, _, _ = fetch("%s://%s/%%zz" % (u.scheme, u.netloc), ctx, allowed, timeout, retries=0)
+        srv = {k.lower(): v for k, v in h.items()}.get("server", "")
+        out += [(p_, v_, "header server en error 400 (servidor de enfrente)", u.netloc) for p_, v_ in tokens_ver(srv) if v_]
+    except Exception:
+        pass
     return out
 
 
@@ -178,7 +186,7 @@ def detect_tech(url, headers, page, status=200, body=""):
         if h in low:
             tech.update((prod, ver, "header " + h) for prod, ver in tokens_ver(low[h]))
     if "generator" in page.meta:
-        tech.add(split_ver(page.meta["generator"]) + ("meta generator",))
+        tech.add(split_ver(re.sub(r"\s*\(.*?\)", "", page.meta["generator"])) + ("meta generator",))
     for s in page.scripts:
         m = LIB_RE.search(os.path.basename(urlparse(s).path))
         if m:
