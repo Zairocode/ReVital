@@ -141,9 +141,13 @@ Ya existe una primera versión. Recorre las páginas del mismo dominio y detecta
 - nombre de los scripts (`jquery-1.4.2.min.js` → jquery 1.4.2);
 - extensión de las páginas (`.aspx` → ASP.NET WebForms, `.jsp`, `.php`, `.cfm`, `.do`…).
 
-También lista formularios y sus campos (útil para documentar la app). Tiene `--insecure` para servidores viejos con TLS 1.0 o certificados vencidos, y `--demo` como autoprueba sin red.
+También detecta por **cookies de sesión** (`ASPSESSIONID`, `JSESSIONID`, `PHPSESSID`), **rutas típicas** (`WebResource.axd`, `/struts/`, `/wp-content/`), **comentarios HTML** y **páginas de error** (ej. `Apache Tomcat/5.5.23` en un 404).
 
-> ⚠️ **Pendiente de integración:** hoy el crawler guarda `salida/reporte.json` con `{start, pages[], tech[]}` (formato anterior). Hay que adaptarlo para que use `inventory.nuevo(...)`/`componente(...)` y escriba `inventario-web.json`, separando `producto` y `version` en lugar de cadenas como `"lib: jquery 1.4.2"`.
+También lista formularios y sus campos (útil para documentar la app) y los documentos enlazados (PDF, DOC, XLS…). Opciones: `--insecure` (servidores viejos con TLS 1.0 o certificados vencidos), `--entidad`, `--scope host2,host3` (hosts permitidos; no sigue redirects fuera de scope), `--timeout`, `--demo` (autoprueba sin red). Evita trampas (ids de sesión en URL, tope de 5 páginas por patrón), reintenta fallos de red y guarda lo recorrido si se interrumpe con Ctrl+C.
+
+> ✅ **Integrado al contrato:** el crawler ya usa `inventory.nuevo(...)`/`componente(...)` y escribe `salida/inventario-web.json` con `producto` y `version` separados, más `salida/reporte-<entidad>-web.md`. Pruebas: `python -m revital.crawler --demo` y `python tests/test_crawler_local.py` (sitio falso legacy local, sin internet).
+>
+> Pendiente del colector: `sitemap.xml`/`robots.txt` como fuente de rutas, charset real de las páginas, cascada de versiones TLS (con `adaptaciones-windows`), login y JavaScript.
 
 ### 7.2 Colector de red — rama `crawler` (`revital/red.py`)
 Recorre un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
@@ -230,7 +234,7 @@ Regla del evento: **"se enseña lo que funciona"**. Guion sugerido (≈90 s):
 | Riesgo | Mitigación |
 |---|---|
 | El cruce producto→CVE no encuentra coincidencias | Tabla de alias controlada para la demo; probar temprano con la app de prueba |
-| Cada colector entrega un formato distinto | Contrato único en `inventory.py`; adaptar `crawler` (pendiente) |
+| Cada colector entrega un formato distinto | Contrato único en `inventory.py`; `crawler` ya adaptado; `codigo` y `host` deben usarlo igual |
 | Sin internet en la UVG | Catálogos offline, todo local |
 | Querer cubrir todo (4 colectores) y no cerrar ninguno | Prioridad: **web + código + evaluación + reporte** funcionando de punta a punta; red y host después |
 | Afirmar datos que no podemos sostener | En el pitch solo citamos cifras con fuente primaria verificada |
