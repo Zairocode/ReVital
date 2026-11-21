@@ -4,10 +4,14 @@
 # Uso (con el stack arriba):  bash instalar_tema.sh [contenedor]   # por defecto revital-drupal
 set -eu
 HERE="$(cd "$(dirname "$0")" && pwd)"
-C="${1:-revital-drupal}"
+# Windows (Git Bash): no convertir las rutas de DENTRO del contenedor (/var/www/...) en rutas de Windows
+export MSYS2_ARG_CONV_EXCL="/var/www"
+PY="$(command -v python3 || command -v python)"
+C="${1:-$(cd "$HERE/../docker" && docker compose ps -q drupal 2>/dev/null)}"
+[ -n "$C" ] || C=revital-drupal
 docker inspect "$C" >/dev/null 2>&1 || { echo "No encuentro el contenedor $C (docker compose up -d)"; exit 1; }
 
-python3 "$HERE/generar_tema.py"
+"$PY" "$HERE/generar_tema.py"
 docker exec "$C" rm -rf /var/www/html/sites/all/themes/munisoke
 docker cp "$HERE/munisoke" "$C:/var/www/html/sites/all/themes/munisoke"
 docker exec "$C" chown -R www-data:www-data /var/www/html/sites/all/themes/munisoke

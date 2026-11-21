@@ -26,5 +26,5 @@ EOS
   exit $rc'
 code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
 [ "$code" = "200" ] || { echo "FALLO: / responde $code (revisa el error de arriba)"; exit 1; }
-bash "$HERE/aplicar_branding.sh"   # deja la portada MuniSoke GT en / (el objetivo sigue siendo Drupal)
+bash "$HERE/../drupal-tema/instalar_tema.sh" "$C"   # portada 3D MuniSoke GT en / (el objetivo sigue siendo Drupal)
 echo "Listo: http://localhost:8080 (admin / admin). Verifica con: bash verificar.sh"

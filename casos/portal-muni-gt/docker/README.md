@@ -33,12 +33,10 @@ cd casos/portal-muni-gt/docker
 docker compose up -d --build
 ```
 
-### Portada MuniSoke GT
-`instalar_drupal.sh` ya la aplica al final. Si Drupal estaba instalado antes, corre `bash aplicar_branding.sh`.
-`http://localhost:8080/` muestra la portada de `../branding/index.html`; `/?q=user/register`, `/admin` y el resto siguen siendo Drupal
-(el objetivo para el crawler y los CVE no cambia, no se toca el proxy Apache). Es un tema de Drupal (`../drupal-theme/munisoke/`);
-para cambiar la portada edita `branding/index.html` y vuelve a correr `aplicar_branding.sh`.
-Nota: la portada carga tipografías de Google Fonts; sin internet usa las del sistema (se ve algo distinta).
+### Portada MuniSoke GT (tema 3D)
+`instalar_drupal.sh` la instala al final. Si Drupal ya estaba instalado, corre `bash ../drupal-tema/instalar_tema.sh` (detecta el contenedor solo; sirve en Linux/Mac y en Windows con Git Bash).
+`http://localhost:8080/` muestra la portada 3D (`../branding-3d/`, sin internet: three.js, GSAP y fuentes incluidos); `/?q=user/register`, `/admin` y el resto siguen siendo Drupal,
+asi que el objetivo para el crawler y los CVE no cambia (no se toca el proxy Apache). Mas detalle en `../drupal-tema/README.md`.
 
 ### Instalar Drupal (solo la primera vez)
 **Atajo automático (recomendado para la demo):** con el stack arriba, `bash instalar_drupal.sh`
