@@ -2,7 +2,7 @@
 
 > Caso de estudio para ReVital. Se replica **localmente** el stack que de verdad corre en
 > producción en portales de gobierno: un CMS legacy sin soporte. La institución es **ficticia**
-> ("Municipalidad de San Ejemplo"). **Nunca** se escanea un portal real del gobierno.
+> ("municipalidad ficticia MUNI-GT"). **Nunca** se escanea un portal real del gobierno.
 
 ## 1. Por qué este caso es realista
 
@@ -88,8 +88,8 @@ pero igual de real. El resto del caso no cambia.
 ## 7. Cómo usar este caso con ReVital
 
 ```
-python -m revital.crawler http://localhost:8080 --entidad "Muni San Ejemplo"   # rama crawler
-python -m revital.codigo casos/portal-muni-gt/app --entidad "Muni San Ejemplo" # rama directorios (PENDIENTE: aun no existe)
+python -m revital.crawler http://localhost:8080 --entidad "MUNI-GT"   # rama crawler
+python -m revital.codigo casos/portal-muni-gt/app --entidad "MUNI-GT" # rama directorios (PENDIENTE: aun no existe)
 ```
 
 Resultado esperado: inventario de §2, hallazgos KEV de §3 y reporte por entidad en `salida/`.

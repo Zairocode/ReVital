@@ -1,7 +1,7 @@
 {
   "kind": "web",
   "target": "http://localhost:8080",
-  "entidad": "Muni San Ejemplo (ficticia)",
+  "entidad": "MUNI-GT (ficticia)",
   "generado": "2026-11-21 00:00:00",
   "components": [
     {"producto": "drupal", "version": "7.57", "fuente": "archivo /CHANGELOG.txt (el meta generator solo dice Drupal 7)", "donde": "/CHANGELOG.txt"},

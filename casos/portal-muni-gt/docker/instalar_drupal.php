@@ -8,7 +8,7 @@ require_once DRUPAL_ROOT . '/includes/install.core.inc';
 install_drupal(array(
   'parameters' => array('profile' => 'standard', 'locale' => 'en'),
   'forms' => array('install_configure_form' => array(
-    'site_name' => 'Municipalidad de San Ejemplo (ficticia)',
+    'site_name' => 'Municipalidad ficticia MUNI-GT',
     'site_mail' => 'admin@example.com',
     'account' => array('name' => 'admin', 'mail' => 'admin@example.com',
                        'pass' => array('pass1' => 'admin', 'pass2' => 'admin')),

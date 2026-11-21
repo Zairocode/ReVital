@@ -77,7 +77,7 @@ nuclei -u http://localhost:8080 -id CVE-2021-41773,CVE-2018-7600
 ## Contenido de la muni ficticia (pendiente, opcional)
 Para que se vea como un portal real: tras instalar, crear páginas "Transparencia (Art. 10 LAIP)",
 "Trámites", "Noticias" y un formulario de solicitud de información, a nombre de una
-**"Municipalidad de San Ejemplo"** (ficticia, sin escudo ni nombre de una muni real).
+**"municipalidad ficticia MUNI-GT"** (sin escudo ni nombre de una muni real).
 
 ## Problemas comunes
 - **Apache no arranca / error de módulos:** revisar que los nombres de módulo en el `sed` del
