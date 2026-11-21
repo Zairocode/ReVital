@@ -78,6 +78,8 @@ chequear("...y de lo comprimido saca la tecnologia", any(c["producto"] == "Jooml
 
 print("Como lo escribe una persona:")
 chequear("destino sin http:// (127.0.0.1:puerto)", ok(corre("127.0.0.1:%d" % srv.server_port)), "sin esquema no se sabe a donde ir")
+inv_c = corre("127.0.0.1:%d" % puerto_muerto)
+chequear("sin http:// y caido: el error recuerda que se probo https", inv_c["extra"].get("sin_respuesta") is True and "al probar https" in str(inv_c["extra"].get("causa")), inv_c["extra"].get("causa"))
 chequear("destino con espacios o barra final", ok(corre("  " + base + "/  ")))
 
 print("Alcance (www, dominio base y puertos por defecto):")

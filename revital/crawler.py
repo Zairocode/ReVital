@@ -319,31 +319,34 @@ def sondear_tls(host, port, timeout=5):
 
 
 def completar_url(destino, ctx, timeout):
-    """'ejemplo.gob', '10.0.0.5:8080' o ' http://x/ ' -> URL completa. Sin esquema se prueba https y, si no hay, http."""
+    """'ejemplo.gob', '10.0.0.5:8080' o ' http://x/ ' -> (URL completa, nota). Sin esquema se prueba https y, si no hay, http.
+    La nota guarda por que fallo https (p. ej. certificado autofirmado): si http tambien falla, esa es la pista util."""
     d = destino.strip()
     if "://" in d:
-        return d
-    sitio = d.split("/")[0]
+        return d, ""
+    sitio, nota = d.split("/")[0], ""
     for esq in ("https", "http"):
         try:
             fetch("%s://%s/" % (esq, sitio), ctx, {_canon(sitio)}, min(timeout, 6), retries=0)
-            return "%s://%s" % (esq, d)
-        except Exception:
-            continue
-    return "http://" + d
+            return "%s://%s" % (esq, d), ""
+        except Exception as e:
+            if esq == "https":
+                nota = causa(e)
+    return "http://" + d, nota
 
 
 def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5, max_docs=20):
     ctx = contexto_tls(insecure)
     _JAR.clear()
-    start = normalize(completar_url(start, ctx, timeout))
+    start, nota_https = completar_url(start, ctx, timeout)
+    start = normalize(start)
     allowed = {_canon(urlparse(start).netloc)} | {_canon(h) for h in scope}  # www.ejemplo.com y ejemplo.com son el mismo sitio
     print("Recorriendo %s | sitios permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
     try:  # prueba de vida: si el objetivo no responde, no se gastan decenas de peticiones con espera y se dice claro
         fetch(start, ctx, allowed, timeout, retries=1)
     except Exception as e:
         inv = inventory.nuevo("web", start, entidad)
-        c = causa(e)
+        c = causa(e) + (" | al probar https: %s" % nota_https if nota_https else "")
         inv["extra"] = {"tls": {"aceptadas": {}, "obsoletas": []}, "pages": [{"url": start, "error": c}], "documentos": [],
                         "hosts_permitidos": sorted(allowed), "robots_disallow": [], "sitemap_urls": 0, "sin_respuesta": True, "causa": c}
         return inv

@@ -247,6 +247,9 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
             return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + '<div class="aviso mal"><b>SIN DATOS: no se pudo evaluar.</b> '
                           'No se detecto ningun componente (el objetivo no respondio o no se pudo leer). Esto <b>no</b> significa que este libre de '
                           'vulnerabilidades. Revisa la pestana Documentacion para ver el error y vuelve a analizar.</div>', "inicio")
+        if h.get("sin_respuesta"):
+            msg = ('<div class="aviso mal"><b>Resultado incompleto:</b> %s no respondio. Los datos de ese objetivo faltan; no lo des por seguro.</div>'
+                   % ", ".join("<code>%s</code>" % e(z.get("target", "")) for z in h["sin_respuesta"])) + msg
         cuerpo = (tablero.html_tablero(h) + msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
                   '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s%s' % (ks, filas, e(x["slug"]), _config(h.get("configuracion")), recientes))
     return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + cuerpo, "inicio")

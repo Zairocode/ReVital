@@ -87,6 +87,21 @@ assert pedir("GET", "/", extra={})[2].count(b"<script") == 0, "el panel no usa J
 st, _, b = pedir("GET", "/e/vacia"); assert st == 200 and b"SIN DATOS" in b and b'class="estado si"' not in b and b"Cumplimiento" not in b, "no debe verse como CUMPLE ni mostrar un tablero verde"
 assert b"SIN DATOS" in pedir("GET", "/")[2]
 
+# el analisis lanzado desde la pantalla corre el cruce con KEV AUNQUE el colector falle (si no, el panel seguiria mostrando el resultado viejo)
+import time
+llamadas = []
+def falso(args, log_extra=None):
+    llamadas.append(args[0])
+    return (1, "no respondio") if args[0] == "revital.crawler" else (0, "ok")
+panel_falso = app.Panel(salida)
+panel_falso.correr = falso
+t = panel_falso.lanzar("web", "http://x.invalido", "VACIA", False)
+for _ in range(100):
+    if t["estado"] != "en curso":
+        break
+    time.sleep(0.05)
+assert llamadas == ["revital.crawler", "revital.cves"] and t["estado"] == "error", (llamadas, t["estado"])
+
 # el markdown mal formado no rompe nada
 assert "<table>" in vistas.md_a_html("| a |\n|---|\n| b |") and vistas.md_a_html("") == ""
 srv.shutdown()

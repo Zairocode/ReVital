@@ -77,6 +77,10 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
           "| Dependen de configuracion (verificar) | %d |" % len(cond),
           "| Componentes fuera de soporte del fabricante | %d |" % len(res["eol"]),
           "| Configuraciones inseguras (protocolos, web.config...) | %d |" % len(res.get("configuracion", [])), ""]
+    sr = sin_respuesta(inventarios)
+    if sr:
+        L += ["**ATENCION: hay objetivos que no respondieron; este resultado esta INCOMPLETO:**", ""]
+        L += ["- `%s`: %s" % (x["target"], x["causa"] or "sin respuesta") for x in sr] + [""]
     if not res["componentes"]:
         L += ["**Cumplimiento: SIN DATOS.** No se detecto ningun componente: el objetivo no respondio o no se pudo leer. "
               "Esto NO significa que este libre de vulnerabilidades; revisa el error del colector y vuelve a analizar.", ""]
@@ -215,6 +219,12 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
     return "\n".join(L)
 
 
+def sin_respuesta(inventarios):
+    """Objetivos que no respondieron (los marca el colector): con ellos el resultado esta incompleto."""
+    return [{"target": i.get("target", ""), "causa": (i.get("extra") or {}).get("causa", "")}
+            for i in inventarios if (i.get("extra") or {}).get("sin_respuesta")]
+
+
 def guardar(entidad, inventarios, res, info, hoy, reglas, out="salida"):
     os.makedirs(out, exist_ok=True)
     nombre = inventory.slug(entidad) or "sin-entidad"
@@ -223,5 +233,5 @@ def guardar(entidad, inventarios, res, info, hoy, reglas, out="salida"):
     with open(md, "w", encoding="utf-8") as f:
         f.write(markdown(entidad, inventarios, res, info, hoy, reglas))
     with open(js, "w", encoding="utf-8") as f:
-        json.dump(dict(res, entidad=entidad, fecha_evaluacion=hoy, catalogos=info), f, indent=2, ensure_ascii=False)
+        json.dump(dict(res, entidad=entidad, fecha_evaluacion=hoy, catalogos=info, sin_respuesta=sin_respuesta(inventarios)), f, indent=2, ensure_ascii=False)
     return md, js

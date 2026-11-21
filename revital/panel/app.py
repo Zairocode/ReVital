@@ -37,11 +37,10 @@ class Panel(object):
             try:
                 rc, out = self.correr(cmd)
                 t["log"] += out
-                if rc == 0:
-                    rc2, out2 = self.correr(["revital.cves", "--out", self.salida, "--entidad", entidad])
-                    t["log"] += "\n" + out2
-                    rc = rc2
-                t["estado"] = "listo" if rc == 0 else "error"
+                # el cruce corre SIEMPRE: si el objetivo no respondio, el reporte dice SIN DATOS en vez de dejar visible el resultado viejo
+                rc2, out2 = self.correr(["revital.cves", "--out", self.salida, "--entidad", entidad])
+                t["log"] += "\n" + out2
+                t["estado"] = "listo" if rc == 0 and rc2 == 0 else "error"
             except Exception as ex:  # el panel no debe caerse por un analisis fallido
                 t["log"] += "\nError: %s" % ex
                 t["estado"] = "error"
