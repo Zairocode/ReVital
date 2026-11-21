@@ -127,3 +127,18 @@ assert llamadas == ["revital.crawler", "revital.cves"] and t["estado"] == "error
 assert "<table>" in vistas.md_a_html("| a |\n|---|\n| b |") and vistas.md_a_html("") == ""
 srv.shutdown()
 print("ok: paginas, descargas, zip y protecciones")
+
+# recarga automatica: la firma cambia aunque varios archivos se escriban dentro del MISMO segundo
+# (el sentinela escribe inventario, hallazgos y alertas en menos de 1 s; con mtime en segundos la pantalla
+#  se recargaba a medias y no volvia a recargarse con las alertas)
+sal_f = tempfile.mkdtemp()
+pf = app.Panel(sal_f)
+with open(os.path.join(sal_f, "alertas.jsonl"), "w") as f:
+    f.write("{}\n")
+os.utime(os.path.join(sal_f, "alertas.jsonl"), ns=(1700000000_000000000, 1700000000_100000000))
+f1 = pf.firma()
+with open(os.path.join(sal_f, "alertas.jsonl"), "a") as f:
+    f.write('{"tipo": "kev_nueva"}\n')
+os.utime(os.path.join(sal_f, "alertas.jsonl"), ns=(1700000000_000000000, 1700000000_900000000))  # mismo segundo
+assert pf.firma() != f1, "la firma debe cambiar con un cambio dentro del mismo segundo"
+print("ok firma")
