@@ -1,0 +1,20 @@
+{
+  "kind": "web",
+  "target": "http://localhost:8080",
+  "entidad": "Muni San Ejemplo (ficticia)",
+  "generado": "2026-11-21 00:00:00",
+  "components": [
+    {"producto": "drupal", "version": "7.57", "fuente": "CHANGELOG.txt / meta generator", "donde": "/CHANGELOG.txt"},
+    {"producto": "apache http_server", "version": "2.4.49", "fuente": "header Server", "donde": "respuesta HTTP"},
+    {"producto": "php", "version": "7", "fuente": "imagen drupal:7.57", "donde": "runtime"},
+    {"producto": "mariadb", "version": "10", "fuente": "docker-compose", "donde": "contenedor db"}
+  ],
+  "extra": {
+    "cpe": ["cpe:2.3:a:drupal:drupal:7.57", "cpe:2.3:a:apache:http_server:2.4.49"],
+    "kev_esperados": ["CVE-2018-7600", "CVE-2021-41773"],
+    "kev_condicionales": {"CVE-2021-42013": "solo si Apache 2.4.50", "CVE-2019-6340": "solo si modulo RESTful activo"},
+    "ransomware_known": ["CVE-2018-7600", "CVE-2021-41773"],
+    "eol": {"drupal 7": "2025-01-05", "apache 2.4.49": "superada por parche 2.4.51"},
+    "nota_legal": "Institucion ficticia. Replica local offline. No escanear portales reales."
+  }
+}

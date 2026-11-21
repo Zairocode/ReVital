@@ -31,6 +31,7 @@ Los colectores solo llenan `components` (y lo que quieran en `extra`). Nadie lee
 | `directorios` | `revital/codigo.py` | Colector de carpeta/app: web.config, pom.xml, DLLs, composer.json... |
 | `adaptaciones-windows` | `revital/host.py`, `scripts/` | Colector de equipo local en Windows viejo + `.bat` + TLS/Python viejo |
 | `reglas-cisa-cves` | `revital/cves/` | Catálogos offline KEV/NVD, cruce y prioridad, reporte final |
+| `caso/portal-muni-drupal` | `casos/portal-muni-gt/` | Caso de demo: portal de transparencia muni (ficticio) sobre Drupal 7 + Apache 2.4.49, con CVEs en KEV |
 
 ## Uso (objetivo)
 ```
