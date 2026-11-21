@@ -20,7 +20,13 @@
   },
   "alertas": {
     "debug=true": "Poner compilation debug=\"false\" en el web.config de produccion: el modo depuracion expone informacion interna y baja el rendimiento.",
-    "customerrors mode=off": "Usar customErrors mode=\"RemoteOnly\" u \"On\": con Off el publico ve errores detallados (rutas, versiones, codigo)."
+    "customerrors mode=off": "Usar customErrors mode=\"RemoteOnly\" u \"On\": con Off el publico ve errores detallados (rutas, versiones, codigo).",
+    "sin soporte de microsoft": "Migrar a una version de Windows con soporte. Mientras tanto: aislar el equipo de internet y de la red principal, no usarlo para correo ni navegador, y mantener copias de seguridad fuera de linea.",
+    "smbv1": "Desactivar SMBv1 (Activar o desactivar caracteristicas de Windows; o en PowerShell: Set-SmbServerConfiguration -EnableSMB1Protocol $false) y bloquear el puerto 445 hacia internet.",
+    "escritorio remoto": "Si no se usa, desactivarlo. Si se usa: solo por VPN, con autenticacion a nivel de red (NLA), contrasenas robustas y bloqueo de intentos. No exponer el puerto 3389 a internet.",
+    "control de cuentas de usuario": "Volver a activar el Control de cuentas de usuario (UAC) en su nivel por defecto.",
+    "servicio inseguro": "Cambiar a su version cifrada (SFTP/SSH) o desactivar el servicio; si debe quedar, limitarlo por firewall a las IP que lo necesitan.",
+    "sin parches de seguridad": "Instalar las actualizaciones de seguridad pendientes; si el sistema ya no recibe parches, planificar su reemplazo y aislarlo."
   },
   "notas_colector": [
     "se alcanzo el tope",

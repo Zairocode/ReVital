@@ -31,6 +31,15 @@ python -m revital.sentinela --config sentinela.json      # vigila en bucle y avi
 ```
 - **Panel:** resumen por entidad (cumple / no cumple, qué parchear primero), hallazgos con evidencia, inventario, documentación para ver o descargar (`.zip`) y lanzar análisis desde la pantalla. Sin JavaScript, sin internet y sin librerías: corre en equipos viejos (Python 3.8). Solo escucha en `127.0.0.1`.
 - **Sentinela:** vuelve a analizar cada `cada_minutos`, compara con la vez anterior y avisa si aparece un componente nuevo, cambia una versión, se abre una KEV o un objetivo deja de responder. Los avisos se ven en el panel y puede ejecutar un comando propio (`al_detectar_cambio`). Ejemplo: `revital/sentinela.ejemplo.json`.
+## Documentar un equipo Windows viejo (host)
+```
+scripts\revital-host.bat MI-INSTITUCION        # doble clic o consola; solo lectura
+python -m revital.host --entidad MI-INSTITUCION   # lo mismo sin el .bat
+python -m revital.cves --entidad MI-INSTITUCION   # cruza con KEV: parche, mitigacion y regla WAF por vulnerabilidad
+python -m revital.panel --abrir                   # ver y descargar el resultado
+```
+Lee del registro de Windows el sistema, IIS, .NET, Internet Explorer, los programas instalados con su version, los parches y los puertos en escucha, y avisa de configuraciones inseguras tipicas (SMBv1, escritorio remoto, UAC, sistema sin soporte, sin parches). Windows en si no se cruza con CVE (NVD no distingue parches); se reporta su fin de soporte y las alertas.
+
 ## Ramas (cada una toca su carpeta)
 | Rama | Carpeta | Qué |
 |---|---|---|

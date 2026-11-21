@@ -71,7 +71,7 @@
   <div>
     <div class="item" style="border-left-color:var(--web)"><span class="tag">crawler</span><b>Web / crawler</b> <span class="est ok">✔ listo</span><br><small>Headers, cookies, rutas, errores, CMS exacto (Drupal/WP/Joomla), proxy tras backend, PDF/DOCX, robots/sitemap, TLS 1.0 obsoleto. Scope y anti-trampas; <code>--insecure</code>.</small></div>
     <div class="item" style="border-left-color:var(--cod)"><span class="tag">directorios</span><b>Código / carpeta</b> <span class="est ok">✔ listo</span><br><small><code>web.config</code>, <code>pom.xml</code>, composer/npm/NuGet, DLL/JAR, jQuery, versión de Drupal/WP.</small></div>
-    <div class="item" style="border-left-color:var(--host)"><span class="tag">adaptaciones-win</span><b>Host Windows local</b> <span class="est pend">pendiente</span><br><small>Software instalado, Windows/IIS, <code>.bat</code>.</small></div>
+    <div class="item" style="border-left-color:var(--host)"><span class="tag">host</span><b>Equipo Windows local</b> <span class="est ok">✔ listo</span><br><small>Registro: Windows, IIS, .NET, IE, programas, parches y puertos. Alerta SMBv1, RDP, sin soporte. <code>.bat</code> de doble clic.</small></div>
     <div class="item" style="border-left-color:#94a3b8"><span class="tag">crawler</span><b>Red institucional</b> <span class="est pend">pendiente</span><br><small>Rango/hosts y banners (<code>red.py</code>).</small></div>
   </div>
   <div>
@@ -93,12 +93,12 @@
   <div>
     <div class="paso"><b>1. Componentes</b><br>Carga <code>inventario-*.json</code> con <code>cargar_todos()</code></div>
     <div class="paso"><b>2. Cruce CVE (NVD)</b><br>Alias producto → CPE; versión contra rangos de <code>catalogos/nvd-kev.json</code></div>
-    <div class="paso kev"><b>3. ¿Está en CISA KEV?</b><br>Sí → prioridad crítica (ransomware, <code>dueDate</code>, acción). <small>Catálogo congelado: 1790 CVE.</small></div>
-    <small><b>rama reglas-cisa-cves</b> · pendiente de integrar</small>
+    <div class="paso kev"><b>3. ¿Está en CISA KEV?</b><br>Sí → prioridad crítica (ransomware, <code>dueDate</code>, acción). <small>Catálogo congelado: 1790 CVE. Agrega parche, mitigación, regla WAF y exploits públicos.</small></div>
+    <small><b>revital.cves</b> · <span class="est ok">✔ listo</span></small>
   </div>
   <div>
     <div class="niv"><b>Nivel 1 · por colector</b> <span class="est ok">✔</span><br><code>reporte-&lt;entidad&gt;-web-&lt;destino&gt;.md</code><br><small>componentes, TLS, rutas, páginas, formularios, documentos.</small></div>
-    <div class="niv"><b>Nivel 2 · final por entidad</b> <span class="est pend">pendiente</span><br><code>reporte-&lt;entidad&gt;.md</code><br><small>inventario + hallazgos priorizados (KEV) + cumplimiento.</small></div>
+    <div class="niv"><b>Nivel 2 · final por entidad</b> <span class="est ok">✔</span><br><code>reporte-&lt;entidad&gt;.md</code> + <b>panel</b><br><small>inventario + hallazgos priorizados (KEV) + cumplimiento, para ver y descargar.</small></div>
   </div>
 </div>
 
@@ -109,25 +109,26 @@
       <tr><th>Pieza</th><th>Dónde</th><th>Estado</th></tr>
       <tr><td><b>Contrato</b> + catálogos KEV/NVD congelados</td><td><code>main</code> · <code>inventory.py</code>, <code>catalogos/</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
       <tr><td><b>Colector web</b> (probado en Python 3.8 + OpenSSL 1.1.1)</td><td><code>main</code> · <code>crawler.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
-      <tr><td><b>Colector de código</b></td><td><code>main</code> · <code>codigo.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
+      <tr><td><b>Colector de código</b> · <b>de equipo Windows</b></td><td><code>main</code> · <code>codigo.py</code>, <code>host.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
+      <tr><td><b>Evaluación KEV/NVD + reporte final</b> (parche, mitigación, WAF)</td><td><code>main</code> · <code>revital/cves/</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
+      <tr><td><b>Panel</b> (ver/descargar) + <b>Sentinela</b> (vigila y avisa)</td><td><code>main</code> · <code>panel/</code>, <code>sentinela.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
       <tr><td><b>Objetivo de demo</b> Drupal 7.57 + Apache 2.4.49 (Docker)</td><td><code>main</code> · <code>casos/portal-muni-gt/</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
-      <tr><td><b>Evaluación KEV/NVD + reporte final</b></td><td><code>reglas-cisa-cves</code> · <code>revital/cves/</code></td><td><span class="badge b-pend">PEND</span></td></tr>
-      <tr><td><b>Host Windows</b> · <b>Red</b></td><td><code>adaptaciones-windows</code> · <code>crawler</code></td><td><span class="badge b-pend">PEND</span></td></tr>
+      <tr><td><b>Colector de red</b></td><td><code>revital/red.py</code></td><td><span class="badge b-pend">PEND</span></td></tr>
     </table>
-    <small style="color:var(--mut)">Flujo: ramas cortas, PR a <code>main</code> (cambios a <code>inventory.py</code> primero a <code>main</code>). 6 pruebas automáticas, todas pasan. Linux viejo fuera de scope. Solo sistemas autorizados.</small>
+    <small style="color:var(--mut)">Flujo: ramas cortas, PR a <code>main</code>. 9 archivos de pruebas, todos pasan en Python 3.8 + OpenSSL 1.1.1. Linux viejo fuera de scope. Solo sistemas autorizados.</small>
   </div>
   <div>
     <h2><span>3</span>Demo real y criterios del Track 03</h2>
     <div class="flujo"><div><b>1. App legacy</b><br>Drupal 7.57<br>+ Apache 2.4.49</div><div><b>2. Inventario</b><br>7 componentes<br>36 rutas</div><div><b>3. CISA KEV</b><br>CVE-2018-7600<br>CVE-2021-41773</div><div><b>4. Reporte .md</b><br>priorizado</div></div>
     <div class="caja ok" style="padding:4px 8px">
-      <b>Lo que ya vio el crawler en el caso real</b> (muni ficticia, local): Drupal 7.57 · Apache 2.4.49 (proxy) y 2.4.10 (backend) · PHP 7.0.28 · jQuery 1.4.4 · 31 páginas, 14 formularios, 36 rutas sensibles de <code>robots.txt</code>.
+      <b>Resultado real</b> (muni ficticia, local, sin internet): <b>11 KEV abiertas, 5 usadas en ransomware</b> en Drupal 7.57, Apache 2.4.49/2.4.10 y PHP 7.0.28, con parche, mitigación y regla WAF por cada una. Un <b>Windows 7 de oficina</b> (Flash, WinRAR 5, Reader 9): 39 KEV abiertas, IE 8 sin soporte, SMBv1 y escritorio remoto activos.
       <ul>
         <li><b>No reescribe el sistema:</b> lectura pasiva, sin modificar nada.</li>
         <li><b>Recupera la tarea de punta a punta:</b> de operar a ciegas a saber qué parchear primero.</li>
         <li><b>Datos e infraestructura intactos:</b> 100 % offline, stdlib de Python 3.8+.</li>
       </ul>
     </div>
-    <div class="fase"><b>FASE 2 · PROPUESTA (no es MVP)</b> — parche virtual no invasivo (proxy/WAF con sandbox) y monitoreo continuo. Se valida con el equipo; no se construye antes de cerrar el cruce con KEV.</div>
+    <div class="fase"><b>Ya incluido:</b> panel local para ver y descargar (sin internet) y <b>sentinela</b> que vigila y avisa de cambios. <b>FASE 2 · PROPUESTA:</b> aplicar el parche virtual (proxy/WAF con sandbox) que hoy ya se entrega como regla lista para copiar.</div>
   </div>
 </div>
 

@@ -211,8 +211,13 @@ Recorrerá un rango o lista de hosts de la institución y toma banners de servic
 
 Produce `inventario-codigo-<destino>.json` y `reporte-<entidad>-codigo-<destino>.md`. Es el colector con la evidencia más precisa porque lee versiones declaradas, no adivinadas. Contra el código real del caso `portal-muni-gt` da Drupal 7.57, jQuery 1.4.4 y jQuery UI 1.8.7.
 
-### 7.4 Colector de host — rama `adaptaciones-windows` (`revital/host.py`, `scripts/`) — ⏳ por hacer
-Correrá en el propio equipo/servidor Windows viejo: software instalado, versión de Windows/IIS, etc. Incluye un `.bat` para lanzarlo fácil y las adaptaciones para TLS y Python viejos. Produce `inventario-host.json`.
+### 7.4 Colector de host — `revital/host.py`, `scripts/revital-host.bat` — ✅ funcionando
+`python -m revital.host --entidad X` (o doble clic en `scripts\revital-host.bat`) documenta **este** equipo Windows, solo lectura. Lee el registro y comandos del sistema (`winreg`, `netstat`, `wmic`/PowerShell): sistema operativo, IIS, .NET Framework, Internet Explorer, programas instalados con versión, parches (hotfixes) y puertos TCP en escucha. Produce `inventario-host-<equipo>.json` y `reporte-<entidad>-host-<equipo>.md`.
+
+- **Alertas de configuración** (llegan a `revital.cves` como configuración insegura, con qué hacer): sistema sin soporte de Microsoft, SMBv1 habilitado, escritorio remoto, UAC desactivado, Telnet/FTP expuestos y sin parches recientes.
+- **Nombres normalizados** para que el cruce los reconozca (`Adobe Reader 9.5.0` → `Adobe Acrobat Reader`; también Flash Player, WinRAR, 7-Zip, Firefox, Chrome); `alias.json` los conoce.
+- **Sin falsas alarmas conocidas:** probado en un Windows 11 real (reporta `6.3` por compatibilidad, `wmic` ya no existe) y con un Windows 7 de ejemplo. No se acusa de "sin parches" cuando no se pudo consultar.
+- **Límites:** Windows en sí no se cruza con CVE (NVD no distingue qué parches tiene el equipo; se reporta fin de soporte y alertas). Java no se mapea todavía (NVD usa `1.7.0 update 45`). No probado en un Windows 7 real, solo con datos de ejemplo. Prueba: `tests/test_host.py`.
 
 ### 7.5 Evaluación y reporte — rama `reglas-cisa-cves` (`revital/cves/`) — ⏳ por hacer
 1. **Carga** todos los `inventario-*.json` con `cargar_todos()`.
