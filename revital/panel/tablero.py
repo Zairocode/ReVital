@@ -9,9 +9,16 @@ e = html.escape
 ROJO, VERDE, GRIS, GRIS2, BLANCO = "#e10600", "#22c55e", "#3a3a3a", "#262626", "#ffffff"
 
 CSS = """
-.tb{background:#050505;color:#fff;border:1px solid #1f1f1f;border-radius:16px;padding:26px 28px 8px;margin:0 0 22px;font-family:"Segoe UI",Arial,sans-serif}
-.tb .fila{display:flex;flex-wrap:wrap;margin:0 -14px 18px}
-.tb .w{flex:1 1 260px;padding:6px 14px 14px;min-width:240px}
+.tb{color:#fff;margin:0 0 22px;font-family:"Segoe UI",Arial,sans-serif}
+.tb .fila{display:flex;flex-wrap:wrap;margin:0 -8px 0}
+.tb .w{flex:1 1 260px;margin:8px;padding:18px 20px 16px;min-width:240px;position:relative;border:1px solid #2c2c2c;border-radius:4px;
+background:#0b0c0f;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
+.tb .w:before{content:"";position:absolute;top:-1px;right:-1px;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #5a5a5a transparent transparent}
+.tb .w:after{content:"";position:absolute;bottom:-1px;left:-1px;border-style:solid;border-width:16px 0 0 16px;border-color:transparent transparent transparent #5a5a5a}
+.tb .w.mal{border-color:rgba(225,6,0,.65);background:#140405;background:linear-gradient(135deg,rgba(225,6,0,.22),rgba(225,6,0,.04))}
+.tb .w.mal:before{border-right-color:#e10600} .tb .w.mal:after{border-left-color:#e10600} .tb .w.mal .lb{color:#ff3b30}
+.tb .w.bien{border-color:rgba(34,197,94,.6);background:#04120a;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.04))}
+.tb .w.bien:before{border-right-color:#22c55e} .tb .w.bien:after{border-left-color:#22c55e} .tb .w.bien .lb{color:#22c55e}
 .tb .w2{flex:2 1 420px}
 .tb .lb{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#e5e5e5;margin:0 0 8px}
 .tb .big{font-size:50px;font-weight:700;line-height:1;margin:6px 0 12px;letter-spacing:-1px}
@@ -20,14 +27,14 @@ CSS = """
 .tb .cab{display:flex;justify-content:space-between;align-items:flex-start}
 .tb .ico{width:54px;height:54px;border-radius:50%;background:#fff;display:inline-block;text-align:center;flex:0 0 54px}
 .tb .ico svg{margin-top:13px}
-.tb .sep{border-left:1px solid #2f2f2f}
+.tb .sep{border-left:1px solid rgba(255,255,255,.15)} .tb .w.sep{border-left:1px solid}
 .tb .kv{font-size:12px;letter-spacing:.6px;color:#cfcfcf;margin:10px 0 0;text-transform:uppercase}
 .tb .kv b{display:block;font-size:15px;letter-spacing:0;color:#fff;text-transform:none;line-height:1.35}
 .tb .kv b.r{color:#e10600} .tb .kv b.g{color:#22c55e}
 .tb table{background:transparent;border:0;font-size:14px} .tb td{border:0;padding:5px 6px 5px 0;color:#fff;vertical-align:middle}
 .tb .ley{font-size:12px;letter-spacing:.6px;color:#cfcfcf;margin:6px 0 0}
 .tb .ley span{display:inline-block;width:18px;height:3px;margin:0 6px 3px 14px;vertical-align:middle}
-.tb .pie2{color:#6b6b6b;font-size:12px;padding:4px 0 10px}
+.tb .pie2{color:#6b6b6b;font-size:12px;padding:8px 0 4px}
 """
 
 # Iconos (negro sobre el circulo blanco). Formas simples para que se vean igual en navegadores viejos.
@@ -221,7 +228,7 @@ def resumen(h):
 
 def _stat(titulo, n, ico, estilo, extra=""):
     cls = "r" if n else "g"
-    return ('<div class="w"><div class="cab"><div class="lb">%s</div>%s</div><div class="big %s">%d</div>%s'
+    return ('<div class="w %s"><div class="cab">' % ("mal" if n else "bien") + '<div class="lb">%s</div>%s</div><div class="big %s">%d</div>%s'
             '<div class="mut" style="margin-top:8px">%s</div></div>' % (e(titulo), icono(ico), cls, n, barra(n, 24, estilo), extra))
 
 
@@ -242,7 +249,7 @@ def html_tablero(h):
     # fila 2: anillo de componentes, plazo CISA y medidor de cumplimiento
     peor = next((f for f in s["filas"] if f["vulnerable"]), None)
     b.append('<div class="fila">')
-    b.append('<div class="w"><div class="lb">Componentes seguros</div><div style="display:flex;align-items:center">'
+    b.append('<div class="w %s"><div class="lb">Componentes seguros</div>' % ("bien" if s["seguros"] == s["comps"] else "mal") + '<div style="display:flex;align-items:center">'
              '<div style="margin-right:18px"><div class="big %s" style="margin-bottom:4px">%d<small>/ %d</small></div>'
              '<div class="kv">Mas expuesto<b class="r">%s</b></div></div>%s</div></div>'
              % ("g" if s["seguros"] == s["comps"] else "r", s["seguros"], s["comps"],
@@ -257,9 +264,9 @@ def html_tablero(h):
                     abs(dias) if dias is not None else "?"))
     else:
         plazo = '<div class="kv">Sin vulnerabilidades KEV<b class="g">Al dia con CISA</b></div>'
-    b.append('<div class="w"><div class="lb">Plazo CISA mas atrasado</div>%s</div>' % plazo)
+    b.append('<div class="w %s"><div class="lb">Plazo CISA mas atrasado</div>%s</div>' % ("mal" if mv else "bien", plazo))
     seg = s["seguros"] / float(s["comps"]) if s["comps"] else 1.0
-    b.append('<div class="w" style="text-align:center"><div class="lb">Cumplimiento</div>%s'
+    b.append('<div class="w %s" style="text-align:center"><div class="lb">Cumplimiento</div>' % ("mal" if s["kev"] else "bien") + '%s'
              '<div style="display:flex;justify-content:center;margin-top:4px">'
              '<div style="padding:0 18px"><div class="mut">SEGUROS</div><div style="font-size:22px;font-weight:700" class="g">%d%%</div></div>'
              '<div class="sep"></div><div style="padding:0 18px"><div class="mut">VULNERABLES</div>'
@@ -270,7 +277,7 @@ def html_tablero(h):
     # fila 3: curva de gravedad y riesgo por componente
     b.append('<div class="fila">')
     alta = sum(s["cvss"][7:])
-    b.append('<div class="w w2"><div class="lb">Gravedad de lo encontrado (CVSS 0-10)</div><div style="display:flex;align-items:center;flex-wrap:wrap">%s'
+    b.append('<div class="w w2 %s"><div class="lb">Gravedad de lo encontrado (CVSS 0-10)</div>' % ("mal" if alta else "bien") + '<div style="display:flex;align-items:center;flex-wrap:wrap">%s'
              '<div style="margin-left:14px"><div style="font-size:24px;font-weight:800" class="%s">%s</div>'
              '<div style="font-weight:700">EXPOSICION</div><div class="mut">%d de %d con CVSS 7 o mas</div></div></div></div>'
              % (curva(s["cvss"]) if s["total"] else '<div class="mut" style="width:430px">sin hallazgos</div>',
@@ -282,8 +289,8 @@ def html_tablero(h):
                        else barra(0, 20, "fino", 150), "r" if f["vulnerable"] else "g",
                        ("%d KEV" % f["kev"]) if f["kev"] else ("%d CVE" % f["total"] if f["total"] else ("sin soporte" if f["eol"] else "OK")))
                     for f in s["filas"][:8])
-    b.append('<div class="w"><div class="lb">Riesgo por componente</div><table>%s</table>%s</div>'
-             % (filas or '<tr><td class="mut">sin componentes</td></tr>',
+    b.append('<div class="w %s"><div class="lb">Riesgo por componente</div><table>%s</table>%s</div>'
+             % ("mal" if any(f["vulnerable"] for f in s["filas"]) else "bien", filas or '<tr><td class="mut">sin componentes</td></tr>',
                 '<div class="mut">y %d mas en Inventario</div>' % (len(s["filas"]) - 8) if len(s["filas"]) > 8 else ""))
     b.append('</div>')
 
@@ -291,19 +298,19 @@ def html_tablero(h):
     b.append('<div class="fila">')
     eol = "".join('<div class="kv">%s %s<b class="r">sin soporte desde<br>%s</b></div>' % (
         e(c.get("producto", "")), e(c.get("version", "")), e(c.get("fin_soporte", "?"))) for c in s["eol"][:3])
-    b.append('<div class="w" style="flex:1 1 200px"><div class="cab"><div class="lb">Fuera de soporte</div>%s</div>'
+    b.append('<div class="w %s" style="flex:1 1 200px"><div class="cab"><div class="lb">Fuera de soporte</div>' % ("mal" if s["eol"] else "bien") + '%s</div>'
              '<div class="big %s">%d</div>%s</div>' % (icono("reloj"), "r" if s["eol"] else "g", len(s["eol"]),
                                                        eol or '<div class="kv"><b class="g">todo con soporte</b></div>'))
     conf = "".join('<div class="kv">%s<b class="r">%s</b></div>' % (e(c.get("tipo", "")), e(_corta(c.get("detalle") or "", 44)))
                    for c in s["config"][:3])
-    b.append('<div class="w sep" style="flex:1 1 200px"><div class="cab"><div class="lb">Configuracion insegura</div>%s</div>'
+    b.append('<div class="w %s" style="flex:1 1 200px"><div class="cab"><div class="lb">Configuracion insegura</div>' % ("mal" if s["config"] else "bien") + '%s</div>'
              '<div class="big %s">%d</div>%s</div>' % (icono("engrane"), "r" if s["config"] else "g", len(s["config"]),
                                                        conf or '<div class="kv"><b class="g">sin alertas</b></div>'))
     if len(s["anios"]) >= 2:
         graf = lineas(s["anios"], [("KEV", ROJO, s["linea_kev"]), ("Con exploit", BLANCO, s["linea_exp"])])
     else:
         graf = '<div class="mut" style="padding:30px 0">sin historial suficiente</div>'
-    b.append('<div class="w w2"><div class="lb">Vulnerabilidades explotadas acumuladas (por ano de ingreso a KEV)</div>%s'
+    b.append('<div class="w w2 %s"><div class="lb">Vulnerabilidades explotadas acumuladas' % ("mal" if s["kev"] else "bien") + ' (por ano de ingreso a KEV)</div>%s'
              '<div class="ley"><span style="background:#e10600"></span>EXPLOTADAS (KEV)<span style="background:#fff"></span>CON EXPLOIT PUBLICO</div></div>'
              % graf)
     b.append('</div>')
