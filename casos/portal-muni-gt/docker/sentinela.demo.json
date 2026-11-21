@@ -1,0 +1,10 @@
+{
+  "cada_minutos": 1,
+  "salida": "salida",
+  "objetivos": [
+    {"entidad": "MUNI-GT", "tipo": "red", "destino": "100.91.166.18", "puertos": [21, 25, 3306, 6379, 8088]},
+    {"entidad": "MUNI-GT", "tipo": "web", "destino": "http://100.91.166.18:8088"},
+    {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "casos/portal-muni-gt/backend/sirec"}
+  ],
+  "al_detectar_cambio": ""
+}

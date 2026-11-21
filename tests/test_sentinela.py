@@ -6,6 +6,9 @@ from revital import sentinela
 from revital.panel import datos
 
 subprocess.run([sys.executable, "-m", "revital.sentinela", "--demo"], check=True, stdout=subprocess.DEVNULL)
+# el ejemplo que el panel muestra para copiar debe ser JSON valido (rutas de Windows con \\ escapadas)
+ej = json.load(open(os.path.join(os.path.dirname(sentinela.__file__), "sentinela.ejemplo.json"), encoding="utf-8"))
+assert {o["tipo"] for o in ej["objetivos"]} == {"web", "codigo", "red"}, ej
 
 
 def hall(version_drupal, kev):
@@ -72,4 +75,35 @@ nueva = os.path.join(tempfile.mkdtemp(), "no", "existe")
 sentinela.vigilar({"salida": nueva, "objetivos": []}, una_vez=True)
 est = datos.estado_sentinela(nueva)
 assert est and est["en_marcha"] is False and est["ciclo"] == 1 and est["objetivos"] == [], est
+# objetivo de RED: un FTP que aparece entre dos vueltas (el "cambio en vivo" del demo) -> componente nuevo + KEV nueva
+import threading
+def escuchar(puerto, banner):
+    srv = socket.socket(); srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); srv.bind(("127.0.0.1", puerto)); srv.listen(4)
+    def bucle():
+        while True:
+            try:
+                c, _ = srv.accept()
+            except OSError:
+                return
+            try:
+                c.sendall(banner)
+            finally:
+                c.close()
+    threading.Thread(target=bucle, daemon=True).start()
+    return srv
+libre = lambda: (lambda s: (s.bind(("127.0.0.1", 0)), s.getsockname()[1], s.close())[1])(socket.socket())
+p_ssh, p_ftp = libre(), libre()
+ssh = escuchar(p_ssh, b"SSH-2.0-OpenSSH_7.2\r\n")
+sal3 = tempfile.mkdtemp()
+cfg3 = {"salida": sal3, "objetivos": [{"entidad": "SERVIDOR-MUNI", "tipo": "red", "destino": "127.0.0.1", "puertos": [p_ssh, p_ftp]}]}
+est3 = sentinela.vuelta(cfg3, sal3)
+assert [o["ok"] for o in est3] == [True], est3
+assert not [a for a in datos.alertas(sal3) if a["tipo"] != "objetivo_inalcanzable"], "primera vuelta = linea base"
+ftp = escuchar(p_ftp, b"220 ProFTPD 1.3.5 Server (MuniSoke) [127.0.0.1]\r\n")
+sentinela.vuelta(cfg3, sal3)
+al3 = datos.alertas(sal3)
+assert any(a["tipo"] == "componente_nuevo" and "ProFTPD" in a["detalle"] for a in al3), al3
+assert any(a["tipo"] == "kev_nueva" and "CVE-2015-3306" in a["detalle"] for a in al3), al3
+assert sentinela.vuelta({"salida": sal3, "objetivos": [{"entidad": "X", "tipo": "red", "destino": "8.8.8.8"}]}, sal3)[0]["ok"] is False, "red publica: se rechaza"
+ssh.close(); ftp.close()
 print("ok: linea base, cambios detectados, alertas y comando propio")

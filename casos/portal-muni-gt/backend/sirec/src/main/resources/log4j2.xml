@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders><Console name="consola" target="SYSTEM_OUT"><PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5level SIREC %m%n"/></Console></Appenders>
+  <Loggers><Root level="info"><AppenderRef ref="consola"/></Root></Loggers>
+</Configuration>
