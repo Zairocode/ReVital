@@ -1,7 +1,7 @@
 {
   "kind": "web",
   "target": "http://localhost:8080",
-  "entidad": "Muni San Ejemplo",
+  "entidad": "MUNI-GT",
   "generado": "2026-11-21 10:29:05",
   "components": [
     {
@@ -52,7 +52,7 @@
       {
         "url": "http://localhost:8080",
         "status": 200,
-        "title": "Welcome to Municipalidad de San Ejemplo (ficticia) | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Welcome to Municipalidad ficticia MUNI-GT | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/node?destination=node",
@@ -131,7 +131,7 @@
       {
         "url": "http://localhost:8080/admin/",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/admin?destination=admin",
@@ -154,7 +154,7 @@
       {
         "url": "http://localhost:8080/comment/reply/",
         "status": 404,
-        "title": "Page not found | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Page not found | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/comment/reply?destination=comment/reply",
@@ -177,7 +177,7 @@
       {
         "url": "http://localhost:8080/cron.php",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/node?destination=node",
@@ -200,7 +200,7 @@
       {
         "url": "http://localhost:8080/filter/tips/",
         "status": 200,
-        "title": "Compose tips | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Compose tips | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/filter/tips?destination=filter/tips",
@@ -256,7 +256,7 @@
       {
         "url": "http://localhost:8080/node/add/",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/node/add?destination=node/add",
@@ -293,7 +293,7 @@
       {
         "url": "http://localhost:8080/search/",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/search?destination=search",
@@ -323,7 +323,7 @@
       {
         "url": "http://localhost:8080/update.php",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [],
         "scripts": [
           "http://localhost:8080/misc/jquery.js?v=1.4.4",
@@ -334,7 +334,7 @@
       {
         "url": "http://localhost:8080/user/login/",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user/login/",
@@ -357,7 +357,7 @@
       {
         "url": "http://localhost:8080/user/logout/",
         "status": 403,
-        "title": "Access denied | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Access denied | Municipalidad ficticia MUNI-GT",
         "forms": [],
         "scripts": [
           "http://localhost:8080/misc/jquery.js?v=1.4.4",
@@ -368,7 +368,7 @@
       {
         "url": "http://localhost:8080/user/password/",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user/password/",
@@ -390,7 +390,7 @@
       {
         "url": "http://localhost:8080/user/register/",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user/register/",
@@ -422,7 +422,7 @@
       {
         "url": "http://localhost:8080/",
         "status": 200,
-        "title": "Welcome to Municipalidad de San Ejemplo (ficticia) | Municipalidad de San Ejemplo (ficticia)",
+        "title": "Welcome to Municipalidad ficticia MUNI-GT | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/node?destination=node",
@@ -445,7 +445,7 @@
       {
         "url": "http://localhost:8080/user/register",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user/register",
@@ -470,7 +470,7 @@
       {
         "url": "http://localhost:8080/user/password",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user/password",
@@ -492,7 +492,7 @@
       {
         "url": "http://localhost:8080/user",
         "status": 200,
-        "title": "User account | Municipalidad de San Ejemplo (ficticia)",
+        "title": "User account | Municipalidad ficticia MUNI-GT",
         "forms": [
           {
             "action": "/user",
