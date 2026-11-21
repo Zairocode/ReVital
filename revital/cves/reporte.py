@@ -2,6 +2,9 @@
 import json, os, time
 
 from revital import inventory
+from revital.cves import catalogo as C
+
+EDB_URL = "https://www.exploit-db.com/exploits/%d"
 
 
 def _celda(t):
@@ -14,12 +17,29 @@ def _donde(comp_o_h):
     return txt + (" y %d mas" % (len(ev) - 2) if len(ev) > 2 else "")
 
 
+def _marca(e):
+    m = [t for t, si in (("Metasploit", C.edb(e, C.EDB_MSF, 0)), ("verificado", e[C.EDB_VERIF])) if si]
+    return " (%s)" % ", ".join(m) if m else ""
+
+
 def _exploit_txt(x, n=2):
     ex = x.get("exploits") or []
     if not ex:
         return "no conocido"
-    txt = ", ".join("EDB-%d%s" % (e[0], " (verificado)" if e[1] else "") for e in ex[:n])
+    txt = ", ".join("EDB-%d%s" % (e[0], _marca(e)) for e in ex[:n])
     return txt + (" y %d mas" % (len(ex) - n) if len(ex) > n else "")
+
+
+def _exploit_detalle(e):
+    """Linea con enlace a la ficha (solo la ficha publica; ReVital no descarga el codigo)."""
+    donde = ", ".join(t for t in (e[C.EDB_TIPO], C.edb(e, C.EDB_PLAT),
+                                  "puerto %s" % C.edb(e, C.EDB_PUERTO) if C.edb(e, C.EDB_PUERTO) else "") if t)
+    return "[EDB-%d](%s)%s: %s (%s, %s)" % (e[0], EDB_URL % e[0], _marca(e), _celda(e[C.EDB_TITULO]), donde,
+                                            e[C.EDB_FECHA])
+
+
+def _cve(x):
+    return "%s (%s)" % (x["cve"], x["alias"]) if x.get("alias") else x["cve"]
 
 
 def _corto(t, n=160):
@@ -70,11 +90,12 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
               "|---|---|---|---|---|---|---|---|"]
         for n, x in enumerate(kev, 1):
             L.append("| %d | **%s** | %s | %s %s | %s. %s | %s | %s%s | %s |" % (
-                n, x["nivel_txt"], x["cve"], x["producto"], x["version"], x["motivo"], _celda(x.get("nombre")),
+                n, x["nivel_txt"], _cve(x), x["producto"], x["version"], x["motivo"], _celda(x.get("nombre")),
                 _exploit_txt(x), x.get("fecha_limite", ""), " (vencida)" if x.get("vencido") else "",
                 _celda(_donde(x))))
         L += ["", "Exploit publico = hay codigo de ataque publicado en Exploit-DB (exploit-db.com): cualquiera puede usarlo, "
-                  "lo que sube la urgencia. ReVital solo consulta el indice; no descarga ni ejecuta exploits."]
+                  "lo que sube la urgencia. (Metasploit) = ademas viene empaquetado en Metasploit: se lanza con un par de comandos. "
+                  "ReVital solo consulta el indice; no descarga ni ejecuta exploits."]
     else:
         L.append("Ninguna.")
     L.append("")
@@ -84,11 +105,19 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
         L += ["> Las mitigaciones y reglas son de ejemplo para ganar tiempo mientras se actualiza. Probarlas antes en un "
               "entorno de prueba (el ataque debe dar 403 y el uso normal 200). La correccion definitiva es el parche.", ""]
         for x in kev:
-            L += ["### %s: %s %s (%s)" % (x["cve"], x["producto"], x["version"], x["nivel_txt"]), "",
+            L += ["### %s: %s %s (%s)" % (_cve(x), x["producto"], x["version"], x["nivel_txt"]), "",
                   "- **Parche:** %s" % x["parche"],
                   "- **Accion requerida por CISA:** %s Fecha limite: %s%s." % (
-                      x.get("accion", ""), x.get("fecha_limite", "?"), " (vencida)" if x.get("vencido") else ""),
-                  "- **Exploit publico:** %s" % _exploit_txt(x, 3)]
+                      x.get("accion", ""), x.get("fecha_limite", "?"), " (vencida)" if x.get("vencido") else "")]
+            ex = x.get("exploits") or []
+            if ex:
+                L.append("- **Exploit publico:** %d en Exploit-DB%s" % (
+                    len(ex), "; hay modulo de Metasploit" if x.get("exploit_metasploit") else ""))
+                L += ["  - %s" % _exploit_detalle(e) for e in ex[:3]]
+                if len(ex) > 3:
+                    L.append("  - y %d mas en `hallazgos-*.json`" % (len(ex) - 3))
+            else:
+                L.append("- **Exploit publico:** no conocido en Exploit-DB")
             if x.get("mitigacion"):
                 L.append("- **Mitigacion mientras se actualiza:** %s" % x["mitigacion"])
             if x.get("regla"):
@@ -131,7 +160,7 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
         L += ["| Prioridad | CVE | Componente | CVSS | Exploit publico | Parche | Descripcion |",
               "|---|---|---|---|---|---|---|"]
         L += ["| %s | %s | %s %s | %s | %s | %s | %s |" % (
-            x["nivel_txt"], x["cve"], x["producto"], x["version"], x["cvss"] if x["cvss"] is not None else "?",
+            x["nivel_txt"], _cve(x), x["producto"], x["version"], x["cvss"] if x["cvss"] is not None else "?",
             _exploit_txt(x, 1), _celda(x["parche"]), _celda(_corto(x["descripcion"], 120))) for x in otras[:tope]]
         if len(otras) > tope:
             L.append("\n%d mas en `hallazgos-*.json`." % (len(otras) - tope))

@@ -143,19 +143,40 @@ def cargar(datos=DATOS, demo=False, catalogos=CATALOGOS):
 
 # ---------- Exploit-DB: CSV del indice -> {cve: [[id, verificado, tipo, fecha, titulo], ...]} ----------
 
+# Cada exploit del indice: [id, verificado, tipo, fecha, titulo, plataforma, puerto, metasploit, alias]
+# (los 5 primeros en ese orden siempre: el panel los lee por posicion)
+EDB_ID, EDB_VERIF, EDB_TIPO, EDB_FECHA, EDB_TITULO, EDB_PLAT, EDB_PUERTO, EDB_MSF, EDB_ALIAS = range(9)
+
+
+def es_metasploit(fila):
+    """Modulo de Metasploit = ataque empaquetado, se lanza con un par de comandos (lo puede usar cualquiera)."""
+    return "metasploit" in ((fila.get("tags") or "") + " " + (fila.get("description") or "")).lower()
+
+
 def indexar_exploitdb(texto_csv):
     cves = {}
     for fila in csv.DictReader(io.StringIO(texto_csv)):
         codigos = (fila.get("codes") or "") + " " + (fila.get("description") or "")
+        msf = 1 if es_metasploit(fila) else 0
+        alias = (fila.get("aliases") or "").split(";")[0].strip()
         for cve in set(re.findall(r"CVE-\d{4}-\d{4,}", codigos.upper())):
-            e = [int(fila["id"]), 1 if str(fila.get("verified", "")).strip() == "1" else 0, fila.get("type", ""),
-                 fila.get("date_published", ""), (fila.get("description") or "")[:100]]
             lista = cves.setdefault(cve, [])
-            if all(x[0] != e[0] for x in lista):  # el espejo repite filas por etiqueta
-                lista.append(e)
+            previo = next((x for x in lista if x[EDB_ID] == int(fila["id"])), None)
+            if previo:  # el espejo repite la fila una vez por etiqueta: se juntan
+                previo[EDB_MSF] = previo[EDB_MSF] or msf
+                previo[EDB_ALIAS] = previo[EDB_ALIAS] or alias
+                continue
+            lista.append([int(fila["id"]), 1 if str(fila.get("verified", "")).strip() == "1" else 0, fila.get("type", ""),
+                          fila.get("date_published", ""), (fila.get("description") or "")[:100],
+                          fila.get("platform", ""), fila.get("port", ""), msf, alias])
     for lista in cves.values():
-        lista.sort(key=lambda x: (-x[1], x[0]))  # verificados primero
+        lista.sort(key=lambda x: (-x[EDB_MSF], -x[EDB_VERIF], x[EDB_ID]))  # Metasploit y verificados primero
     return cves
+
+
+def edb(e, campo, defecto=""):
+    """Lee un campo de una entrada del indice; los indices viejos (5 campos) no traen los ultimos."""
+    return e[campo] if len(e) > campo else defecto
 
 
 def importar_exploitdb(origen=None, destino=EXPLOITDB, insecure=False):
