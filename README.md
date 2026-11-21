@@ -40,6 +40,13 @@ python -m revital.panel --abrir                   # ver y descargar el resultado
 ```
 Lee del registro de Windows el sistema, IIS, .NET, Internet Explorer, los programas instalados con su version, los parches y los puertos en escucha, y avisa de configuraciones inseguras tipicas (SMBv1, escritorio remoto, UAC, sistema sin soporte, sin parches). Windows en si no se cruza con CVE (NVD no distingue parches); se reporta su fin de soporte y las alertas.
 
+## Descubrir qué hay en una red (PoC)
+```
+python -m revital.red 192.168.1.0/24 --entidad MI-INSTITUCION --autorizo   # solo conecta y lee banners; --autorizo es obligatorio
+python -m revital.cves --entidad MI-INSTITUCION                            # cruza con KEV y muestra qué parchear
+```
+Por defecto solo redes privadas, máximo 256 equipos y pocas conexiones a la vez. Usar solo en redes propias o con autorizacion por escrito.
+
 ## Ramas (cada una toca su carpeta)
 | Rama | Carpeta | Qué |
 |---|---|---|

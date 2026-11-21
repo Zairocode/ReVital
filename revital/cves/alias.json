@@ -203,6 +203,31 @@
       "cpe": ["microsoft:internet_explorer"],
       "nombres": ["internet explorer", "microsoft internet explorer"],
       "eol": {"6": "2016-01-12", "7": "2016-01-12", "8": "2016-01-12", "9": "2016-01-12", "10": "2016-01-12", "11": "2022-06-15"}
+    },
+    "OpenSSH": {
+      "cpe": ["openbsd:openssh"],
+      "nombres": ["openssh"],
+      "eol": {}
+    },
+    "Exim": {
+      "cpe": ["exim:exim"],
+      "nombres": ["exim"],
+      "eol": {}
+    },
+    "Samba": {
+      "cpe": ["samba:samba"],
+      "nombres": ["samba"],
+      "eol": {}
+    },
+    "Redis": {
+      "cpe": ["redis:redis"],
+      "nombres": ["redis"],
+      "eol": {}
+    },
+    "ISC BIND": {
+      "cpe": ["isc:bind"],
+      "nombres": ["bind", "isc bind"],
+      "eol": {}
     }
   }
 }
