@@ -52,6 +52,7 @@ Estos servicios **sí son explotables** (por ejemplo, Struts S2-045 y ProFTPD mo
 - [x] T8 — `docker/verificar-backend.sh` (4/4 OK) y `docker/sentinela.demo.json`.
 - [x] T9 — punta a punta: red + web + código + cves en una entidad → MySQL/Redis expuestos, Exim, Struts/Log4j/Spring, Drupal/Apache; encender FTP → alerta del sentinela.
 - [x] T10 — guion del demo en `casos/portal-muni-gt/backend/README.md`.
+- [x] T12 — `backend/test_e2e.py`: punta a punta automatizado, 25/25 contra el stack por Tailscale; con Redis apagado falla en "Redis expuesto" (sale con 1).
 - [x] T11 — frontend de Antigravity (`feat/frontend-sirec`) probado en el navegador contra SIREC real: IUSI (F-1024, F-2048, F-0000), órdenes de agua, multa, ornato y finca al día, LAIP + seguimiento; 0 errores en consola; portal 6/6.
 
 Orden por valor si falta tiempo: T2 → T6 → T1 → T7/T8 (ya hay alertas 1) → T4 (alertas 2 y 4) → T3 (alerta 3) → T5.

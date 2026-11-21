@@ -20,6 +20,10 @@ bash verificar-backend.sh 100.91.166.18           # Exim, MySQL, Redis y SIREC a
 bash verificar.sh http://100.91.166.18:8088       # el portal sigue 6/6
 SIREC_BASE=http://100.91.166.18:8088 python3 ../backend/test_sirec_api.py   # contrato de la API
 ```
+**Punta a punta (ensayo del demo):** corre ReVital completo contra el stack (red + web + código + KEV), el recorrido portal → SIREC → BD y el cambio en vivo con el ProFTPD real; deja el FTP como estaba. Sale con error si algo no aparece.
+```bash
+E2E_IP=100.91.166.18 E2E_PORTAL=http://100.91.166.18:8088 python3 casos/portal-muni-gt/backend/test_e2e.py   # 25 comprobaciones
+```
 Pruebas sin Docker: `python3 casos/portal-muni-gt/backend/db/test_datos.py` (datos ficticios y semilla del contrato). Si cambias el generador: `python3 db/generar_datos.py` (reescribe `db/initdb/02-datos.sql`).
 
 ## Guion del demo (≈3 min), desde la raíz del repo
