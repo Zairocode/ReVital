@@ -75,6 +75,17 @@ class _Scope(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+def decode(raw, ctype=""):
+    """Charset del header o del <meta>; si no, utf-8 y, si no cuadra, latin-1 (que nunca falla)."""
+    m = re.search(rb"charset=[\"']?([\w-]+)", ctype.encode() + b" " + raw[:2048], re.I)
+    for enc in ([m.group(1).decode()] if m else []) + ["utf-8"]:
+        try:
+            return raw.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            pass
+    return raw.decode("latin-1")
+
+
 def fetch(url, ctx, allowed, timeout=15, retries=2):
     """-> (status, headers, body, url_final). Reintenta fallos de red; los HTTP 4xx/5xx se devuelven tal cual."""
     req = Request(url, headers={"User-Agent": "ReVital-crawler/0.1"})
@@ -88,7 +99,7 @@ def fetch(url, ctx, allowed, timeout=15, retries=2):
             ctype = r.headers.get("Content-Type", "")
             ok = ("html" in ctype or "xml" in ctype or ctype.startswith("text/")
                   or ctype.split(";")[0] in ("", "application/octet-stream"))  # legacy mal configurado
-            body = r.read(2_000_000).decode("latin-1") if ok else ""  # latin-1 no falla nunca
+            body = decode(r.read(2_000_000), ctype) if ok else ""
             headers = dict(r.headers.items())
             headers["set-cookie"] = "\n".join(r.headers.get_all("Set-Cookie") or [])
             return r.getcode(), headers, body, r.geturl()
@@ -258,6 +269,8 @@ def demo():  # python -m revital.crawler --demo : verifica el parser sin red
             ("ASP.NET WebForms", "", "ruta /webresource.axd")} <= t, t
     err = detect_tech("http://h/x", {}, Page(), 404, "<h3>Apache Tomcat/5.5.23</h3>")
     assert ("Apache Tomcat", "5.5.23", "pagina de error") in err, err
+    assert decode("Educación".encode("latin-1")) == "Educación" and decode("Educación".encode("utf-8")) == "Educación"
+    assert decode('<meta charset="iso-8859-1">Niño'.encode("latin-1")).endswith("Niño")
     assert normalize("HTTP://H/a;jsessionid=AB12?x=1&PHPSESSID=z#f") == "http://h/a?x=1"
     print("ok")
 
