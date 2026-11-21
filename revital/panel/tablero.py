@@ -9,7 +9,7 @@ e = html.escape
 ROJO, VERDE, GRIS, GRIS2, BLANCO = "#e10600", "#22c55e", "#3a3a3a", "#262626", "#ffffff"
 
 CSS = """
-.tb{background:#050505;color:#fff;border-radius:16px;padding:26px 28px 8px;margin:0 0 22px;font-family:"Segoe UI",Arial,sans-serif}
+.tb{background:#050505;color:#fff;border:1px solid #1f1f1f;border-radius:16px;padding:26px 28px 8px;margin:0 0 22px;font-family:"Segoe UI",Arial,sans-serif}
 .tb .fila{display:flex;flex-wrap:wrap;margin:0 -14px 18px}
 .tb .w{flex:1 1 260px;padding:6px 14px 14px;min-width:240px}
 .tb .w2{flex:2 1 420px}

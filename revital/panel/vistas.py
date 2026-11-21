@@ -6,62 +6,67 @@ from urllib.parse import quote
 from revital.panel import datos, tablero
 
 e = html.escape
-COLOR = {"CRITICO": ("#ffffff", "#b91c1c"), "URGENTE (vencido)": ("#ffffff", "#c2410c"), "URGENTE": ("#ffffff", "#d97706"),
-         "ALTO (exploit publico)": ("#ffffff", "#b45309"), "ALTO": ("#78350f", "#fde68a"), "MEDIO": ("#1e3a8a", "#dbeafe"), "BAJO": ("#334155", "#e2e8f0")}
-SEV_ALERTA = {"critica": ("#ffffff", "#b91c1c"), "alta": ("#ffffff", "#c2410c"), "media": ("#78350f", "#fde68a"), "info": ("#334155", "#e2e8f0")}
+COLOR = {"CRITICO": ("#ffffff", "#e10600"), "URGENTE (vencido)": ("#ffffff", "#b30500"), "URGENTE": ("#ffffff", "#8a0400"),
+         "ALTO (exploit publico)": ("#ff6b62", "#2a0a08"), "ALTO": ("#ff8a80", "#1f0d0c"), "MEDIO": ("#e5e5e5", "#262626"), "BAJO": ("#9a9a9a", "#1a1a1a")}
+SEV_ALERTA = {"critica": ("#ffffff", "#e10600"), "alta": ("#ffffff", "#8a0400"), "media": ("#ff8a80", "#1f0d0c"), "info": ("#9a9a9a", "#1a1a1a")}
 
 CSS = """
 *{box-sizing:border-box}
-body{margin:0;background:#f1f5f9;color:#0f172a;font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
-a{color:#1d4ed8;text-decoration:none} a:hover{text-decoration:underline}
-.top{background:#0b1b3a;background:linear-gradient(135deg,#0b1b3a 0%,#123a7a 100%);color:#fff;padding:0}
+body{margin:0;background:#050505;color:#f2f2f2;font:15px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+a{color:#ffffff;text-decoration:none;font-weight:600} a:hover{color:#e10600;text-decoration:none}
+.top{background:#000;border-bottom:1px solid #1f1f1f;color:#fff;padding:0}
 .top .in{max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.marca{display:flex;align-items:center;color:#fff} .marca:hover{text-decoration:none}
-.marca svg{margin-right:12px} .marca b{font-size:22px;letter-spacing:.3px} .marca span{display:block;font-size:12px;color:#bfdbfe}
-.nav a{color:#dbeafe;margin-left:6px;padding:7px 14px;border-radius:7px;font-weight:600;font-size:14px;display:inline-block}
-.nav a:hover{background:rgba(255,255,255,.12);text-decoration:none} .nav a.act{background:#fff;color:#0b1b3a}
-.wrap{max-width:1180px;margin:0 auto;padding:22px}
-h1{font-size:26px;margin:4px 0 2px} h2{font-size:18px;margin:26px 0 10px} h3{font-size:15px;margin:0 0 6px}
-.sub{color:#64748b;margin:0 0 18px}
-.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.marca{display:flex;align-items:center;color:#fff} .marca:hover{color:#fff}
+.marca svg{margin-right:12px} .marca b{font-size:22px;letter-spacing:.3px} .marca span{display:block;font-size:11px;color:#8a8a8a;letter-spacing:.8px;text-transform:uppercase;font-weight:600}
+.nav a{color:#bdbdbd;margin-left:6px;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:.9px;text-transform:uppercase;display:inline-block;border-bottom:2px solid transparent}
+.nav a:hover{color:#fff} .nav a.act{color:#fff;border-bottom-color:#e10600}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 22px}
+h1{font-size:30px;margin:4px 0 2px;font-weight:700;letter-spacing:-.3px} h3{font-size:15px;margin:0 0 6px}
+h2{font-size:13px;margin:30px 0 12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e5e5e5}
+.sub{color:#8a8a8a;margin:0 0 18px}
+.card{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:20px}
 .grid{display:flex;flex-wrap:wrap;margin:0 -9px}
 .grid>.card,.grid>.k{margin:9px;flex:1 1 300px}
-.k{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;flex:1 1 150px;min-width:150px}
-.k .n{font-size:30px;font-weight:800;line-height:1.1} .k .t{color:#64748b;font-size:13px}
-.k.mal{border-left:5px solid #b91c1c} .k.bien{border-left:5px solid #15803d} .k.med{border-left:5px solid #d97706} .k.neu{border-left:5px solid #64748b}
-.chip{display:inline-block;border-radius:99px;padding:2px 11px;font-size:12px;font-weight:700;white-space:nowrap}
-.estado{display:inline-block;border-radius:8px;padding:4px 12px;font-weight:800;font-size:13px}
-.si{background:#dcfce7;color:#14532d} .no{background:#fee2e2;color:#7f1d1d}
-.btn{display:inline-block;background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:9px 16px;font:600 14px "Segoe UI",Arial,sans-serif;cursor:pointer}
-.btn:hover{background:#1e40af;text-decoration:none} .btn.sec{background:#e2e8f0;color:#0f172a} .btn.sec:hover{background:#cbd5e1}
-.tabs{border-bottom:2px solid #e2e8f0;margin:18px 0 18px} .tabs a{display:inline-block;padding:9px 16px;color:#475569;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-2px}
-.tabs a.act{color:#1d4ed8;border-bottom-color:#1d4ed8} .tabs a:hover{text-decoration:none;color:#0f172a}
-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;font-size:14px}
-th{background:#f8fafc;text-align:left;padding:9px 12px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #e2e8f0}
-td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top} tr:last-child td{border-bottom:0}
-details.h{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 8px;padding:0}
-details.h summary{cursor:pointer;padding:11px 14px;list-style:none} details.h summary::-webkit-details-marker{display:none}
-details.h summary b{margin:0 8px} details.h[open]{border-color:#93c5fd}
-details.h .cu{padding:2px 16px 14px;color:#334155;border-top:1px solid #f1f5f9}
-.cu p{margin:8px 0} .mut{color:#64748b} .peq{font-size:13px}
-.aviso{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:11px 16px;margin:0 0 16px;color:#78350f}
-.aviso.mal{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d} .aviso.bien{background:#f0fdf4;border-color:#86efac;color:#14532d}
-label{display:block;font-weight:600;margin:10px 0 4px;font-size:14px}
-input[type=text],select{width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font:14px "Segoe UI",Arial,sans-serif;background:#fff}
+.k{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:16px 18px;flex:1 1 150px;min-width:150px}
+.k .n{font-size:40px;font-weight:700;line-height:1.1;letter-spacing:-.5px} .k .t{color:#9a9a9a;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.k.mal{border-top:3px solid #e10600} .k.mal .n{color:#e10600} .k.bien{border-top:3px solid #22c55e} .k.bien .n{color:#22c55e}
+.k.med{border-top:3px solid #e10600} .k.med .n{color:#e10600} .k.neu{border-top:3px solid #3a3a3a}
+.chip{display:inline-block;border-radius:99px;padding:2px 11px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;text-transform:uppercase}
+.estado{display:inline-block;border-radius:99px;padding:5px 14px;font-weight:800;font-size:12px;letter-spacing:.9px}
+.si{background:#22c55e;color:#03140a} .no{background:#e10600;color:#fff}
+.btn{display:inline-block;background:#fff;color:#050505;border:0;border-radius:99px;padding:9px 18px;font:700 13px "Segoe UI",Arial,sans-serif;letter-spacing:.4px;cursor:pointer}
+.btn:hover{background:#e10600;color:#fff} .btn.sec{background:transparent;color:#e5e5e5;border:1px solid #3a3a3a} .btn.sec:hover{border-color:#fff;color:#fff;background:transparent}
+.tabs{border-bottom:1px solid #1f1f1f;margin:20px 0 20px} .tabs a{display:inline-block;padding:10px 16px;color:#8a8a8a;font-weight:700;font-size:12px;letter-spacing:.9px;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.act{color:#fff;border-bottom-color:#e10600} .tabs a:hover{color:#fff}
+table{width:100%;border-collapse:collapse;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;overflow:hidden;font-size:14px}
+th{background:#0d0d0d;text-align:left;padding:11px 12px;color:#8a8a8a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;border-bottom:1px solid #1f1f1f}
+td{padding:10px 12px;border-bottom:1px solid #1a1a1a;vertical-align:top;color:#e5e5e5} tr:last-child td{border-bottom:0}
+details.h{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;margin:0 0 8px;padding:0}
+details.h summary{cursor:pointer;padding:12px 14px;list-style:none} details.h summary::-webkit-details-marker{display:none}
+details.h summary b{margin:0 8px} details.h[open]{border-color:#e10600}
+details.h .cu{padding:2px 16px 14px;color:#d4d4d4;border-top:1px solid #1a1a1a}
+details summary{cursor:pointer}
+.cu p{margin:8px 0} .mut{color:#8a8a8a} .peq{font-size:13px}
+.aviso{background:#0d0d0d;border:1px solid #1f1f1f;border-left:4px solid #8a8a8a;border-radius:10px;padding:12px 16px;margin:0 0 16px;color:#e5e5e5}
+.aviso.mal{border-left-color:#e10600} .aviso.mal b{color:#ff3b30} .aviso.bien{border-left-color:#22c55e} .aviso.bien b{color:#22c55e}
+label{display:block;font-weight:700;margin:12px 0 5px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:#bdbdbd}
+input[type=text],select{width:100%;padding:10px 12px;border:1px solid #2f2f2f;border-radius:10px;font:14px "Segoe UI",Arial,sans-serif;background:#000;color:#fff}
+input[type=text]:focus,select:focus{border-color:#e10600;outline:0}
 .fila{display:flex;flex-wrap:wrap;margin:0 -8px} .fila>div{padding:0 8px;flex:1 1 220px}
-.chk{font-weight:400;display:block;margin:8px 0} .chk input{margin-right:8px}
-pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;overflow:auto;font:13px/1.45 Consolas,"Courier New",monospace}
-code{background:#e2e8f0;border-radius:4px;padding:1px 5px;font:13px Consolas,"Courier New",monospace}
-.md{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:6px 26px 20px} .md h1{font-size:23px;margin-top:18px} .md table{margin:10px 0}
-.pie{color:#94a3b8;text-align:center;font-size:12px;padding:26px 0}
-.tl{border-left:3px solid #cbd5e1;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
-@media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:22px}}
-@media print{.top,.tabs,.btn,.nav,.pie{display:none} body{background:#fff}}
+.chk{font-weight:400;display:block;margin:10px 0;text-transform:none;letter-spacing:0;font-size:14px;color:#e5e5e5} .chk input{margin-right:8px}
+pre{background:#000;color:#e5e5e5;border:1px solid #1f1f1f;border-radius:10px;padding:14px;overflow:auto;font:13px/1.45 Consolas,"Courier New",monospace}
+code{background:#1a1a1a;color:#f2f2f2;border-radius:4px;padding:1px 5px;font:13px Consolas,"Courier New",monospace}
+.md{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:6px 26px 20px;color:#e5e5e5}
+.md h1{font-size:24px;margin-top:18px} .md h2{font-size:13px} .md table{margin:10px 0} .md a{color:#fff;text-decoration:underline}
+.pie{color:#5a5a5a;text-align:center;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:28px 0}
+.tl{border-left:2px solid #2f2f2f;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
+@media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:24px}}
+@media print{.top,.tabs,.btn,.nav,.pie{display:none} body{background:#fff;color:#000}}
 """
 
-LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c0 9-6 15-14 18C11 33 5 27 5 18V7Z" fill="#60a5fa"/>'
-        '<path d="M19 6 29 9.500V18c0 6.500-4 11-10 13.500C13 29 9 24.500 9 18V9.500Z" fill="#0b1b3a"/>'
-        '<path d="M13.500 18.500 17.500 22.500 25 14" stroke="#86efac" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c0 9-6 15-14 18C11 33 5 27 5 18V7Z" fill="#ffffff"/>'
+        '<path d="M19 6 29 9.500V18c0 6.500-4 11-10 13.500C13 29 9 24.500 9 18V9.500Z" fill="#050505"/>'
+        '<path d="M13.500 18.500 17.500 22.500 25 14" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
 
 
 def pagina(titulo, cuerpo, activo="inicio"):
@@ -76,12 +81,12 @@ def pagina(titulo, cuerpo, activo="inicio"):
 
 
 def chip(nivel):
-    fg, bg = COLOR.get(nivel, ("#334155", "#e2e8f0"))
+    fg, bg = COLOR.get(nivel, ("#9a9a9a", "#1a1a1a"))
     return '<span class="chip" style="color:%s;background:%s">%s</span>' % (fg, bg, e(nivel))
 
 
 def chip_sev(sev):
-    fg, bg = SEV_ALERTA.get(sev, ("#334155", "#e2e8f0"))
+    fg, bg = SEV_ALERTA.get(sev, ("#9a9a9a", "#1a1a1a"))
     return '<span class="chip" style="color:%s;background:%s">%s</span>' % (fg, bg, e(sev))
 
 
@@ -119,7 +124,7 @@ def inicio(ents, alertas, estado_s, mensaje=""):
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">componentes</div></div></div>'
                      '<a class="btn" href="/e/%s">Abrir</a> <a class="btn sec" href="/zip/%s">Descargar documentación</a></div>'
                      % (e(x["entidad"]), estado_chip(r["cumple"]), e(x["h"].get("fecha_evaluacion", "")),
-                        e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#b91c1c" if r["kev"] else "#15803d",
+                        e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#e10600" if r["kev"] else "#22c55e",
                         r["kev"], r["ransomware"], r["componentes"], e(x["slug"]), e(x["slug"])))
         b.append("</div>")
     b.append("<h2>Nuevo análisis</h2>" + form_analisis())
@@ -145,8 +150,8 @@ def _tabs(slug, tab):
 
 def _hallazgo(x, abierto=False):
     ev = "".join("<li><code>%s</code> · %s · %s</li>" % (e(v.get("donde", "")), e(v.get("fuente", "")), e(v.get("kind", ""))) for v in x.get("evidencia", [])[:6])
-    kev = ('<span class="chip" style="color:#fff;background:#7f1d1d">EN KEV</span> ' if x.get("en_kev") else "")
-    rw = ('<span class="chip" style="color:#7f1d1d;background:#fee2e2">ransomware</span> ' if x.get("ransomware") == "Known" else "")
+    kev = ('<span class="chip" style="color:#fff;background:#e10600">EN KEV</span> ' if x.get("en_kev") else "")
+    rw = ('<span class="chip" style="color:#ff6b62;background:#2a0a08">ransomware</span> ' if x.get("ransomware") == "Known" else "")
     extra = ""
     if x.get("en_kev"):
         extra = '<p><b>Qué hacer (CISA):</b> %s<br><span class="mut">Fecha límite de CISA: %s%s · en KEV desde %s</span></p>' % (
@@ -209,8 +214,8 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
         filas = ""
         for c in sorted(h.get("componentes", []), key=lambda z: z["producto"].lower()):
             k = c["producto"] + "|" + c["version"]
-            marca = ('<span class="chip" style="color:#7f1d1d;background:#fee2e2">fuera de soporte</span> ' if k in eol else "") + \
-                    ('<span class="chip" style="color:#334155;background:#e2e8f0">sin catálogo</span>' if k in sin else "")
+            marca = ('<span class="chip" style="color:#ff6b62;background:#2a0a08">fuera de soporte</span> ' if k in eol else "") + \
+                    ('<span class="chip" style="color:#9a9a9a;background:#1a1a1a">sin catálogo</span>' if k in sin else "")
             ev = "".join("<li><code>%s</code> · %s</li>" % (e(v.get("donde", "")), e(v.get("fuente", ""))) for v in c.get("evidencia", [])[:8])
             filas += ("<tr><td><b>%s</b><br><span class=\"mut peq\">detectado como: %s</span></td><td>%s</td><td>%s</td>"
                       "<td><details><summary class=\"peq\">%d evidencia(s)</summary><ul class=\"peq\">%s</ul></details></td></tr>"
@@ -275,7 +280,7 @@ def sentinela(estado_s, alertas, config_ejemplo):
         if objs:
             b.append("<h2>Qué vigila</h2><table><tr><th>Entidad</th><th>Tipo</th><th>Destino</th><th>Última vez</th></tr>%s</table>" % "".join(
                 "<tr><td>%s</td><td>%s</td><td><code>%s</code></td><td>%s</td></tr>" % (e(o.get("entidad", "")), e(o.get("tipo", "")), e(o.get("destino", "")),
-                                                                                         "OK" if o.get("ok") else "<span style=\"color:#b91c1c\"><b>falló</b> %s</span>" % e(o.get("detalle", ""))) for o in objs))
+                                                                                         "OK" if o.get("ok") else "<span style=\"color:#e10600\"><b>falló</b> %s</span>" % e(o.get("detalle", ""))) for o in objs))
     else:
         b = ['<div class="aviso"><b>El sentinela todavía no se ha ejecutado.</b> Vigila en segundo plano y avisa cuando algo cambia.</div>']
     b.append('<h2>Alertas</h2>' + ('<div class="tl">%s</div>' % _lista_alertas(alertas) if alertas else '<p class="mut">Sin alertas todavía.</p>'))
