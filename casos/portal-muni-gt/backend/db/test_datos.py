@@ -26,6 +26,8 @@ tri = lambda f: [t["estado"] for t in d1["trimestres"] if t["finca"] == f]
 f = fin["F-1024"]
 assert (f["valor_fiscal"], f["tasa_por_millar"], f["iusi_anual"], f["zona"]) == (185000.00, 9, 1665.00, 3), f
 assert f["direccion"] == "4a avenida 7-21, zona 3, Soke"
+dueno = d1["contribuyentes"][f["contribuyente_id"] - 1]
+assert (dueno["nombres"][0], dueno["apellidos"][0]) == ("M", "L"), "el contrato enmascara al propietario de F-1024 como 'M**** L****'"
 assert tri("F-1024") == ["pagado", "pagado", "pendiente", "pendiente"]
 assert g.saldo(d1, "F-1024") == 832.50
 assert set(tri("F-2048")) == {"pagado"} and g.saldo(d1, "F-2048") == 0

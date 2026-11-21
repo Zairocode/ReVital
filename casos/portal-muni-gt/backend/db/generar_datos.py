@@ -76,7 +76,8 @@ def generar():
         d["ornato"].append({"dpi": c["dpi"], "anio": 2026, "monto": r.choice((15.00, 50.00, 75.00, 100.00, 150.00)), "pagado": int(r.random() < .55)})
         if r.random() < .8:
             d["agua"].append({"contador": "A-%05d" % (10000 + c["id"]), "contribuyente_id": c["id"], "saldo": round(r.choice((0, 0, r.uniform(25, 900))), 2)})
-    # garantizados por el contrato
+    # garantizados por el contrato (el propietario de F-1024 se muestra enmascarado como "M**** L****")
+    d["contribuyentes"][0].update(nombres="Marta Elena", apellidos="Lopez Cux")
     fijos = [(inmueble("F-1024", 1, 3, "4a avenida 7-21, zona 3, Soke", 185000.00), ["pagado", "pagado", "pendiente", "pendiente"], ("2026-03-12", "2026-06-30", None, None)),
              (inmueble("F-2048", 2, 1, "2a calle 3-15, zona 1, Soke", 64500.00), ["pagado"] * 4, ("2026-02-20", "2026-05-18", "2026-08-21", "2026-11-05")),
              (inmueble("F-3072", 3, 5, "9a avenida 12-40, zona 5, Soke", 98000.00), ["pagado", "vencido", "vencido", "pendiente"], ("2026-03-30", None, None, None))]

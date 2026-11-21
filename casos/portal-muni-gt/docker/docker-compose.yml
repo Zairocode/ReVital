@@ -1,6 +1,9 @@
 # Objetivo de demo ReVital: Portal de Transparencia Municipal (muni FICTICIA) legacy.
 #
 #   [ internet ] --8080--> Apache 2.4.49 (reverse proxy VULNERABLE)  --> Drupal 7.57 --> MariaDB
+#                                        \--/sirec/--> SIREC (Tomcat 8.5.19) --> MySQL 5.5 + Redis
+#   Servidor de la muni (backend, ver ../backend/ y docs/features/backend-sirec.md):
+#     MySQL 5.5.62 :3306 · Redis 5.0.7 :6379 · Exim 4.89 :25 · ProFTPD 1.3.5 :21 (perfil "cambio")
 #
 # CVEs en CISA KEV que quedan expuestos (ambos usados en ransomware):
 #   - CVE-2021-41773  : Apache 2.4.49  (path traversal / lectura de archivos / RCE con cgi)
@@ -9,6 +12,9 @@
 # USO:
 #   docker compose up -d --build
 #   luego instalar Drupal una sola vez (ver README.md de esta carpeta)
+#   cambio en vivo del demo (aparece el FTP):   docker compose --profile cambio up -d ftp
+#   Los puertos del backend escuchan solo en 127.0.0.1; para el demo se publican en la IP de Tailscale
+#   con un compose.override.yml local (nunca en 0.0.0.0 ni en internet).
 #
 # Todo offline, red interna. NUNCA apuntar esto a un sistema real del gobierno.
 
@@ -50,6 +56,52 @@ services:
     # CVE-2021-41773 NO se reproduce (fue justo lo que paso al desplegar en phobos).
     ports:
       - "8080:80"            # el portal queda en http://localhost:8080 (via el proxy 2.4.49)
+    networks: [interna, sirec_priv]   # sirec_priv: para llegar a SIREC en /sirec/
+
+  # ---------------- Servidor de la muni: backend SIREC (todo real, todo ficticio) ----------------
+  sirec-db:
+    image: mysql:5.5.62
+    container_name: revital-sirec-db
+    environment:
+      MYSQL_ROOT_PASSWORD: muni2014        # clave debil y root accesible desde cualquier host: a proposito
+    volumes:
+      - ../backend/db/initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:3306:3306"
+    networks: [interna, sirec_priv]
+
+  redis:
+    image: redis:5.0.7
+    container_name: revital-redis
+    command: ["redis-server", "--protected-mode", "no"]   # sin clave, abierto a la red: a proposito
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [interna, sirec_priv]
+
+  sirec:
+    build: ../backend/sirec
+    image: revital-sirec:3.2.1
+    container_name: revital-sirec
+    depends_on: [sirec-db, redis]
+    # Sin puerto publicado ni salida a internet (red interna): se llega por el proxy en /sirec/.
+    networks: [sirec_priv]
+
+  correo:
+    build: ../backend/correo
+    image: revital-correo:4.89
+    container_name: revital-correo
+    ports:
+      - "127.0.0.1:25:25"
+    networks: [interna]
+
+  ftp:
+    build: ../backend/ftp
+    image: revital-ftp:1.3.5
+    container_name: revital-ftp
+    profiles: ["cambio"]                 # arranca APAGADO: se enciende en vivo durante el demo
+    ports:
+      - "127.0.0.1:21:21"
+      - "127.0.0.1:30000-30009:30000-30009"
     networks: [interna]
 
 volumes:
@@ -58,3 +110,6 @@ volumes:
 networks:
   interna:
     driver: bridge
+  sirec_priv:
+    driver: bridge
+    internal: true                       # SIREC y sus datos sin salida a internet

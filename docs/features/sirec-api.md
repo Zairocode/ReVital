@@ -35,14 +35,14 @@ SIREC es el sistema de recaudación **ficticio** de MuniSoke GT. El portal lo co
 `estado` de cada trimestre: `pagado` | `pendiente` | `vencido`.
 
 ### `POST /sirec/api/orden-pago`
-Campos: `concepto` (`iusi` | `ornato` | `agua` | `multa`) y `referencia` (finca para IUSI, DPI ficticio para ornato, número de contador para agua, número de boleta para multa). Error → 400 `concepto_invalido` o `referencia_invalida`; 404 `referencia_no_encontrada`.
+Campos: `concepto` (`iusi` | `ornato` | `agua` | `multa`) y `referencia` (finca `F-####` para IUSI, DPI `#### ##### ####` para ornato, contador `A-#####` para agua, boleta `PMT-2026-#####` para multa). Error → 400 `concepto_invalido`, `referencia_invalida` o `sin_saldo` (ya está al día); 404 `referencia_no_encontrada`.
 ```json
 {"orden": "OP-2026-004512", "concepto": "iusi", "referencia": "F-1024", "monto": 832.50, "moneda": "GTQ",
  "vence": "2026-11-28", "pagar_en": "Agencias bancarias autorizadas (ficticio)"}
 ```
 
 ### `POST /sirec/api/laip`
-Solicitud de información pública. Campos: `nombre` (obligatorio), `correo` (opcional), `descripcion` (obligatorio, 10–2000 caracteres). Error → 400 `campo_obligatorio` / `descripcion_corta`. Respuesta **201**:
+Solicitud de información pública. Campos: `nombre` (obligatorio), `correo` (opcional), `descripcion` (obligatorio, 10–2000 caracteres). Error → 400 `campo_obligatorio` / `descripcion_corta` / `descripcion_larga`. Respuesta **201**:
 ```json
 {"folio": "LAIP-2026-0153", "fecha": "2026-11-21", "vence": "2026-12-07", "estado": "recibida"}
 ```

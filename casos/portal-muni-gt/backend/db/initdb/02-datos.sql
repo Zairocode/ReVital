@@ -5,7 +5,7 @@ USE sirec;
 SET NAMES utf8;
 
 INSERT INTO contribuyentes (id, nombres, apellidos, dpi, nit, telefono, direccion, zona, nota) VALUES
-(1, 'Otto Claudia', 'Estrada Barrios', '1243 51875 0101', '7156747-9', '0000-8975', '12a avenida 19-29, zona 2, Soke', 2, 'DATO FICTICIO'),
+(1, 'Marta Elena', 'Lopez Cux', '1243 51875 0101', '7156747-9', '0000-8975', '12a avenida 19-29, zona 2, Soke', 2, 'DATO FICTICIO'),
 (2, 'Elena Selvin', 'Hernandez Cux', '1491 10332 0101', '292750-7', '0000-5148', '4a avenida 9-23, zona 1, Soke', 1, 'DATO FICTICIO'),
 (3, 'Oscar Byron', 'Perez Recinos', '2903 56745 0901', '5810873-1', '0000-9133', '9a avenida 10-30, zona 6, Soke', 6, 'DATO FICTICIO'),
 (4, 'Yesenia Hugo', 'Ajcalon Ajcalon', '1288 94514 1708', '7835513-6', '0000-1485', '7a avenida 4-28, zona 1, Soke', 1, 'DATO FICTICIO'),
