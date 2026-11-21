@@ -1,5 +1,6 @@
 import { initHeroScene } from './scene-3d.js';
 import { initAnimations } from './animations.js';
+import { initSirec } from './sirec.js';
 
 const THEME_STORAGE_KEY = 'munisoke-theme-v2';
 const VALID_THEMES = new Set(['light', 'dark']);
@@ -423,6 +424,14 @@ function bootstrap() {
     animationsController = null;
     if (typeof console !== 'undefined' && typeof console.warn === 'function') {
       console.warn('[MuniSoke] Animaciones omitidas por error en inicialización.', error);
+    }
+  }
+
+  try {
+    initSirec();
+  } catch (error) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[MuniSoke] Integración SIREC omitida por error en inicialización.', error);
     }
   }
 

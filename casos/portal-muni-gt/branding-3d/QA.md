@@ -177,3 +177,117 @@ python3 -m http.server 8080 --bind 127.0.0.1
 #    - Pestaña Console: comprobar 0 errores y 0 warnings.
 #    - Emular DPR=3, prefers-reduced-motion: reduce y viewports 360px / 768px / 1366px.
 ```
+
+---
+
+## 5. Auditoría de Integración Frontend SIREC (`#tramites`)
+
+> **Fecha de verificación:** 2026-11-21 · **Contrato:** `docs/features/sirec-api.md`
+> **Navegador real:** Chromium headless (`chromium-1254`, SwiftShader WebGL2) vía CDP en Node.js v24.18.0 sobre `python3 -m http.server --bind 127.0.0.1`
+> **Resultado final:** **APROBADO — 96/96 aserciones PASS (100 %)** tras detectar, corregir y re-verificar **3 defectos reales** en `css/sirec.css` (verificados también mediante inspección visual de capturas en modo claro, oscuro, móvil `360px` y `@media print`).
+
+### 5.1. Defectos detectados y corregidos en la auditoría SIREC
+
+| # | Severidad | Defecto detectado | Archivo modificado | Corrección aplicada y re-verificación |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Media (Print) | **`#btn-orden-imprimir` mantenía `display: inline-flex` computado en `@media print`**: aunque su contenedor padre `.sirec-actions.no-print` se ocultaba (`display: none`), el botón no figuraba explícitamente en la regla de ocultamiento de impresión. Además, los hijos `<strong>` y `<span>` de `.sirec-voucher-print-head` quedaban en línea pegados entre sí. | `css/sirec.css` | Se añadió `#btn-orden-imprimir` explícitamente a la lista `display: none !important` en `@media print` y se formateó `.sirec-voucher-print-head strong/span` en bloque con contraste `#0a2a66` / `#25324a` sobre blanco. Verificado en emulación `media: 'print'` y captura PNG. |
+| 2 | Alta (Visual) | **Etiquetas `.sirec-voucher-label` pegadas sin espacio a código y monto** (`Número de ordenOP-2026-004512` y `Monto a pagarQ 832.50`): la clase `.sirec-voucher-label` carecía de regla CSS en `css/sirec.css`. | `css/sirec.css` | Se estilizó `.sirec-voucher-label` como bloque tipográfico superior (`display: block`, `0.76rem`, mayúsculas, `margin-bottom: 4px`, `color: var(--text-muted)`) y `display: block` en `.sirec-voucher-code` / `.sirec-voucher-amount`. Contraste verificado: **6.96:1** (claro) y **7.56:1** (oscuro). |
+| 3 | Media (Visual) | **Layout de `.sirec-saldo-box`, `<caption>` de tabla IUSI e íconos en `.sirec-state--error/success`**: el bloque de saldo ocupaba solo 1 de las 3 columnas del `<dl>`, la `<caption>` carecía de relleno/alineación y los íconos SVG de alerta/éxito se apilaban en columna sobre el texto. | `css/sirec.css` | Se aplicó `grid-column: 1 / -1` a `.sirec-dl .sirec-saldo-box`, tipografía/padding consistente a `.sirec-table caption` y `flex-direction: row; align-items: flex-start` a `.sirec-state--error` y `.sirec-state--success`. Re-verificado visualmente en claro, oscuro y `360px`. |
+
+### 5.2. Escenarios funcionales verificados en modo mock (`/?mock=1`) — **PASS**
+
+- **Indicador de estado SIREC (`GET /sirec/api/estado`):**
+  - `#sirec-status` pasa a `data-status="online"` con texto `SIREC v3.2.1 en línea · MuniSoke GT (ficticia)` y badge `#sirec-mock-badge` (`Modo de prueba`) visible.
+  - **0 peticiones reales a `/sirec/api/`** (`js/sirec-mock.js` cargado dinámicamente solo con `?mock=1`) y **0 errores** de consola, warnings, excepciones o red.
+- **Consulta tu IUSI (`GET /sirec/api/iusi?finca=...`):**
+  - Validación en navegador (vacío, `F-123`, `1024`): muestra `#iusi-finca-error` vinculado por `aria-describedby`, establece `aria-invalid="true"` y mueve el foco a `#iusi-finca`.
+  - Semilla `F-1024`: dirección `4a avenida 7-21, zona 3, Soke`, propietario enmascarado `M**** L****`, valor fiscal `Q 185,000.00`, IUSI anual `Q 1,665.00`, 4 trimestres (2 `Pagado` + 2 `Pendiente` con color + ícono SVG + texto), saldo `Q 832.50` y botón `"Generar orden de pago del saldo"`.
+  - Flujo directo desde IUSI a Orden: clic en `"Generar orden de pago del saldo"` activa `#tab-orden`, selecciona `iusi` + `F-1024` y genera automáticamente `OP-2026-004512` por `Q 832.50`, vence `2026-11-28`, `Agencias bancarias autorizadas (ficticio)`.
+  - Semilla `F-2048`: 4 trimestres `Pagado`, saldo `Q 0.00`, mensaje de inmueble al día y **sin** botón de orden de pago.
+  - Semilla `F-3072`: 3 trimestres `Vencido` (color + ícono SVG + texto) + 1 `Pendiente`, saldo `Q 2,160.00`.
+  - Semilla `F-0000`: muestra el `mensaje` de error `404 finca_no_encontrada`.
+  - Error directo `400 finca_invalida` verificado mediante `window.__munisoke.sirec.consultarIusi('F-123')`.
+- **Orden de pago (`POST /sirec/api/orden-pago`):**
+  - **0 campos de tarjeta** (`credit`, `card`, `cvv`, `tarjeta`) en el documento.
+  - Cambio dinámico de etiqueta, `placeholder` y texto de ayuda de `#orden-referencia` para los 4 conceptos (`iusi`, `ornato`, `agua`, `multa`).
+  - Validación con referencia inválida (`ornato` = `123`): error en `#orden-referencia-error` (`aria-describedby`), `aria-invalid="true"` y foco en `#orden-referencia`.
+  - Emisión exitosa verificada para: `ornato` (`1001 47673 0101` → `Q 15.00`), `agua` (`A-10006` → `Q 605.56`) y `multa` (`PMT-2026-00101` → `Q 150.00`).
+  - Errores del contrato verificados: `iusi` + `F-2048` (`400 sin_saldo`), `iusi` + `F-0000` y `agua` + `A-00000` (`404 referencia_no_encontrada`), y `400 concepto_invalido` vía `window.__munisoke.sirec.generarOrdenPago`.
+  - **Impresión (`@media print` vía `Emulation.setEmulatedMedia({ media: 'print' })`):** `#orden-comprobante`, `.sirec-voucher-print-head` y `.demo-bar` visibles (`display !== 'none'`); `.site-nav`, `#inicio`, `#servicios`, `#cifras`, `#noticias`, `#transparencia`, `.site-footer`, `.sirec-tabs`, `.sirec-form` y `#btn-orden-imprimir` ocultos (`display === 'none'`).
+- **Solicitud de información pública LAIP (`POST /sirec/api/laip`):**
+  - Validación: envío vacío marca nombre y descripción (`aria-describedby`, `aria-invalid="true"`) y enfoca `#laip-nombre`; descripción `"hola"` (< 10 caracteres) actualiza `#laip-descripcion-count` (`4 / 2000 caracteres`), muestra `#laip-descripcion-error` y enfoca `#laip-descripcion`; correo `"no-es-correo"` muestra `#laip-correo-error` y enfoca `#laip-correo`.
+  - Envío válido sin correo (`201` → `LAIP-2026-0153`, fecha `2026-11-21`, vence `2026-12-07`, estado `Recibida`) y con correo opcional (`201` → `LAIP-2026-0154`).
+  - Clic en `"Consultar seguimiento de este folio"` activa `#tab-seguimiento` y consulta `LAIP-2026-0153` mostrando estado `Recibida` y `10 días hábiles restantes`.
+- **Seguimiento LAIP (`GET /sirec/api/laip/:folio`):**
+  - `LAIP-2026-0101` → `Resuelta` (SVG + texto) y `0 días`.
+  - `LAIP-2026-0140` → `En trámite` (SVG + texto) y `6 días`.
+  - `LAIP-2026-0120` → `Prorrogada` (SVG + texto) y `4 días`.
+  - `LAIP-2026-9999` → `404 folio_no_encontrado` mostrando `mensaje`.
+- **Conexión desde Hero, Tarjetas de Servicios y Transparencia:**
+  - Hero `"Pagar un servicio"` → `#tab-orden`; `"Solicitar información"` → `#tab-laip`.
+  - Tarjetas: `iusi` → `#tab-iusi`; `multas-pmt` → `#tab-orden` (`multa`); `agua-empasoke` → `#tab-orden` (`agua`); `boleto-ornato` → `#tab-orden` (`ornato`); `expedientes-web` → `#tab-seguimiento`; `licencias` → muestra `#sirec-notice` con aviso de gestión presencial.
+  - Transparencia `"Solicitud de información pública"` → `#tab-laip`.
+- **Estados de carga y `aria-live`:** durante la petición en curso, el botón submit queda `disabled`, `#iusi-resultado` (`aria-live="polite"`) pasa a `aria-busy="true"` con `.sirec-state--loading` y `.sirec-spinner`, y al completar vuelve a `aria-busy="false"` y rehabilita el botón.
+
+### 5.3. Modo sin mock (`/` sin `?mock=1`, backend SIREC apagado) — **PASS**
+
+- **No carga `js/sirec-mock.js`** (0 peticiones al módulo mock).
+- Realiza `GET /sirec/api/estado` sobre el mismo origen (ruta relativa).
+- `#sirec-status` transiciona a `data-status="offline"` con texto `"El sistema de recaudación no está disponible, intenta más tarde."`, `#sirec-status-retry` visible y `#sirec-mock-badge` oculto.
+- Al consultar `F-1024` sin backend, muestra exactamente `"El sistema de recaudación no está disponible, intenta más tarde."`, sin datos inventados, sin pantalla vacía y con **0 excepciones JS no capturadas** (`Runtime.exceptionThrown === 0`).
+
+### 5.4. WCAG 2.2 AA (claro/oscuro), Teclado, Responsive, Reduced Motion, Offline y Regresiones — **PASS**
+
+#### Contraste computado WCAG en `#tramites` (`42/42` PASS claro · `42/42` PASS oscuro)
+
+| Elemento `#tramites` | Claro (`fg` / `bg`) | Ratio Claro | Oscuro (`fg` / `bg`) | Ratio Oscuro | Umbral |
+| :--- | :--- | :---: | :--- | :---: | :---: |
+| Título (`#tit-tramites`) / Subtítulo | `#0a2a66` / `#4b5a75` sobre `#f3f6fc` | **12.63 / 6.43** | `#9cc0ff` / `#a9b8d3` sobre `#172238` | **8.62 / 7.93** | >= 3.0 / 4.5 |
+| Estado SIREC `online` / `offline` | `#0a5a32` / `#b42318` sobre `#ffffff` | **8.33 / 6.57** | `#8ef0b9` / `#ff9b96` sobre `#1a263c` | **11.05 / 7.49** | >= 4.5:1 |
+| Badge `#sirec-mock-badge` / Botón reintentar | `#734400`/`#fff4d6` · `#0a2a66`/`#f3f6fc` | **7.50 / 12.63** | `#ffd670`/`#3a2b0d` · `#9cc0ff`/`#172238` | **9.86 / 8.62** | >= 4.5:1 |
+| Pestaña activa / inactiva | `#0a2a66`/`#ffffff` · `#25324a`/`#f3f6fc` | **13.67 / 11.87** | `#f3f6fc`/`#1a263c` · `#d3dcee`/`#172238` | **13.99 / 11.53** | >= 4.5:1 |
+| Label / Hint / Input texto | `#0e1726` / `#4b5a75` / `#0e1726` | **17.96 / 6.96 / 17.96** | `#f3f6fc` / `#a9b8d3` / `#f3f6fc` | **13.99 / 7.56 / 15.73** | >= 4.5:1 |
+| Input borde normal / borde error | `#6c7f9e` / `#c93126` sobre `#ffffff` | **4.06 / 5.32** | `#7189b3` / `#f06a62` sobre `#1a263c` | **4.28 / 5.01** | >= 3.0:1 |
+| Error de campo (`#iusi-finca-error`) | `#b42318` / `#ffffff` | **6.57:1** | `#ff9b96` / `#1a263c` | **7.49:1** | >= 4.5:1 |
+| Botón primario / deshabilitado / secundario | `#ffffff`/`#1452c9` · `#ffffff`/`#566885` · `#0a2a66`/`#ffffff` | **6.82 / 5.65 / 13.67** | `#ffffff`/`#1452c9` · `#dbe6fa`/`#344666` · `#9cc0ff`/`#22314d` | **6.82 / 7.55 / 7.06** | >= 4.5:1 |
+| Tabla IUSI (`caption` / `th` / `td`) | `#0e1726` / `#0e1726` / `#25324a` | **17.96 / 16.59 / 12.85** | `#f3f6fc` / `#f3f6fc` / `#d3dcee` | **13.99 / 14.67 / 10.99** | >= 4.5:1 |
+| Badges `pagado` / `resuelta` | `#0a5a32` / `#e4f6ec` | **7.41:1** | `#8ef0b9` / `#113524` | **9.83:1** | >= 4.5:1 |
+| Badges `pendiente` / `en_tramite` | `#734400` / `#fff4d6` | **7.50:1** | `#ffd670` / `#3a2b0d` | **9.86:1** | >= 4.5:1 |
+| Badge `vencido` | `#9a1c15` / `#fdeceb` | **7.20:1** | `#ffaba5` / `#3f1718` | **8.63:1** | >= 4.5:1 |
+| Badge `recibida` | `#0a2a66` / `#e8f0fe` | **11.93:1** | `#b6d0ff` / `#172b52` | **8.95:1** | >= 4.5:1 |
+| Badge `prorrogada` | `#4a2574` / `#f2ebfc` | **9.99:1** | `#d9baff` / `#2d1b47` | **9.14:1** | >= 4.5:1 |
+| Comprobante orden (`label` / `código` / `monto` / `nota`) | `#4b5a75` / `#0a2a66` / `#0e1726` / `#25324a` | **6.96 / 13.67 / 17.96 / 11.87** | `#a9b8d3` / `#9cc0ff` / `#f3f6fc` / `#d3dcee` | **7.56 / 8.22 / 13.99 / 11.53** | >= 4.5 / 3.0 |
+
+- **Teclado en `[role="tablist"]`:** `ArrowRight`, `ArrowLeft`, `Home` y `End` rotan correctamente el foco, `aria-selected="true"` y `tabindex="0"` / `"-1"`.
+- **Semántica:** jerarquía `h1 -> h2 -> h3 -> h4` sin saltos (1 `h1` único), todos los SVGs decorativos con `aria-hidden="true"`, `0` imágenes sin `alt`, cinta amarilla de demostración y plazo LAIP `10 días (Art. 42)` intactos.
+- **Responsive (`360×800`, `768×1024`, `1366×900` en claro y oscuro con resultados IUSI y Orden visibles):** `0 px` de overflow horizontal (`scrollWidth <= innerWidth`) y todos los tap targets visibles en `#tramites` cumplen ampliamente WCAG 2.2 AA (mínimo medido: **`147×46 px`**, >= `44 px` de altura).
+- **`prefers-reduced-motion: reduce`:** emulado vía CDP → `.sirec-spinner` con `animation-name: none`, contadores inmediatamente en `12`, `340`, `24/7`, `10 días`, y **0 errores**.
+- **100 % Offline:** `0` peticiones externas en red y `0` URLs externas en `index.html`, `css/` y `js/` (únicas coincidencias `http://`: el namespace estándar SVG `http://www.w3.org/2000/svg`).
+- **Cero regresiones:** Hero 3D (`is-webgl-ready`), selector de tema claro/oscuro, menú móvil (`360px` + `Escape`) y buscador (`"agua"`) verificados sin errores.
+
+### 5.5. Cómo reproducir la auditoría SIREC localmente
+
+```bash
+# 1. Servir el portal estático 100 % offline
+cd /home/phobos/Hackaton/ReVital-frontend-sirec/casos/portal-muni-gt/branding-3d
+python3 -m http.server 8080 --bind 127.0.0.1
+
+# 2. Probar en modo mock (sin backend SIREC):
+#    Abrir http://127.0.0.1:8080/?mock=1
+#    - Estado online: SIREC v3.2.1 + badge "Modo de prueba" (0 peticiones /sirec/api/).
+#    - IUSI: probar F-1024 (saldo Q 832.50 -> botón orden OP-2026-004512), F-2048 (al día),
+#      F-3072 (Vencido Q 2,160.00), F-0000 (404) y formato inválido (F-123).
+#    - Orden de pago: probar iusi/ornato (1001 47673 0101)/agua (A-10006)/multa (PMT-2026-00101)
+#      y previsualizar impresión (Ctrl+P / DevTools Rendering -> Emulate CSS media type: print).
+#    - LAIP: enviar solicitud (201 -> LAIP-2026-0153) y consultar seguimiento para
+#      LAIP-2026-0101 (Resuelta), LAIP-2026-0140 (En trámite), LAIP-2026-0120 (Prorrogada) y LAIP-2026-9999 (404).
+
+# 3. Probar en modo real sin backend (degradación limpia):
+#    Abrir http://127.0.0.1:8080/ (sin ?mock=1)
+#    - Confirmar en Network que NO se solicita js/sirec-mock.js y sí GET /sirec/api/estado.
+#    - Confirmar barra en estado offline con botón Reintentar y mensaje claro al consultar F-1024.
+```
+
+
+## Ajuste posterior (revisión de integración, 2026-11-21)
+Formatos de referencia alineados con SIREC real (`docs/features/sirec-api.md`): contador `A-#####`, boleta `PMT-2026-#####`, DPI enviado como `#### ##### ####`; ejemplos tomados de los datos semilla; finca al día → `400 sin_saldo`. Verificado contra el backend real, no solo con `?mock=1`.

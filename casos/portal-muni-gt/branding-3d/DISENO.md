@@ -104,3 +104,53 @@ era nocturno). Cambios:
 - **Cifras** en franja clara con tinte azul→verde; **pie** en azul de marca `#0a2a66`.
 - Se quitaron las etiquetas sobre los títulos de sección (el título ya lo dice).
 - Contraste AA verificado en ambos temas sobre todo el texto visible.
+
+---
+
+## 6. Región `tramites` · Ventanilla de Trámites en Línea (SIREC)
+
+Se incorporó la región modular `<!-- Region: tramites -->` (`#tramites`, `data-region="tramites"`) inmediatamente después de `#servicios` y antes de `#cifras`, junto con la hoja dedicada [`css/sirec.css`](./css/sirec.css), manteniendo el enfoque 100 % offline, la jerarquía estricta de encabezados (`h1 → h2 → h3 → h4`) y los mismos tokens de diseño de `css/styles.css`.
+
+### 6.1 Arquitectura de 4 pestañas WAI-ARIA
+
+El contenedor `.sirec-shell` agrupa los cuatro flujos ciudadanos del contrato SIREC bajo un patrón `role="tablist"` / `role="tab"` / `role="tabpanel"` (sin pagos con tarjeta en línea):
+
+1. **Consulta tu IUSI (`#tab-iusi` → `#panel-iusi`)**: formulario por número de finca (`F-####` / `F-#####`), resumen del inmueble en lista de definición (`.sirec-dl`), tabla responsiva de trimestres (`.sirec-table-wrap` + `.sirec-table` con montos `tabular-nums`) y caja de saldo pendiente (`.sirec-saldo-box`).
+2. **Orden de pago (`#tab-orden` → `#panel-orden`)**: selector de concepto (`iusi`, `ornato`, `agua`, `multa`) y referencia dinámica para emitir una boleta pagadera únicamente en agencias bancarias autorizadas (`.sirec-voucher`).
+3. **Solicitud LAIP (`#tab-laip` → `#panel-laip`)**: formulario conforme al Decreto 57-2008 (Art. 42, plazo de 10 días) con nombre obligatorio, correo opcional y descripción con contador en vivo (`10–2,000` caracteres).
+4. **Seguimiento LAIP (`#tab-seguimiento` → `#panel-seguimiento`)**: consulta por folio (p. ej. `LAIP-2026-0140`) mostrando estado y días restantes.
+
+En escritorio las pestañas forman 4 columnas (`repeat(4, minmax(0, 1fr))`) y en tablet/móvil (`<= 820px`) pasan a una rejilla `2×2` con objetivos táctiles de `>= 48px` de altura y cero desbordamiento horizontal en `360px`, `768px` y `1366px`. Los botones del hero, las tarjetas de `#servicios`, el ítem 6 de `#transparencia` y los enlaces de servicios en `#contacto` enlazan directamente a `#tramites` mediante `data-sirec-open`, `data-sirec-concepto` y `data-sirec-notice`.
+
+### 6.2 Indicador discreto de estado SIREC y avisos contextuales
+
+- **`#sirec-status`** (`role="status"`, `aria-live="polite"`): refleja `data-status="loading" | "online" | "offline"` combinando color AA y forma diferenciada (aro giratorio en carga que pasa a borde punteado estático en `prefers-reduced-motion`, punto sólido en línea y rombo rotado en fuera de línea). Incluye la insignia `#sirec-mock-badge` ("Modo de prueba") y el botón `#sirec-status-retry` (`min-height: 44px`).
+- **`#sirec-notice`**: franja informativa opcional para accesos que requieren aclaración presencial (como Licencias de construcción y uso de suelo).
+
+### 6.3 Paleta semántica de estados y errores (WCAG 2.2 AA en ambos temas)
+
+Todas las insignias (`.sirec-badge`) combinan ícono SVG inline + etiqueta textual y superan `4.5:1` sobre sus fondos respectivos, así como `>= 3:1` en bordes de controles (`--border-control`) y foco visible de `3px`:
+
+| Estado / Rol | Tema Claro (texto / fondo / borde) | Contraste Claro | Tema Oscuro (texto / fondo / borde) | Contraste Oscuro |
+| :--- | :--- | :--- | :--- | :--- |
+| Error de campo (`.field-error`) | `#b42318` sobre `#ffffff` | **6.57:1** | `#ff9b96` sobre `#1a263c` | **7.49:1** |
+| Estado de error y badge `vencido` | `#9a1c15` / `#fdeceb` / `#c93126` | **7.20:1** | `#ffaba5` / `#3f1718` / `#f06a62` | **8.63:1** |
+| Estado de éxito y badges `pagado` / `resuelta` | `#0a5a32` / `#e4f6ec` / `#128a4e` | **7.41:1** | `#8ef0b9` / `#113524` / `#4ad08a` | **9.83:1** |
+| Badges `pendiente` / `en_tramite` y modo prueba | `#734400` / `#fff4d6` / `#c48200` | **7.50:1** | `#ffd670` / `#3a2b0d` / `#f6b11f` | **9.86:1** |
+| Aviso informativo y badge `recibida` | `#0a2a66` / `#e8f0fe` / `#1452c9` | **11.93:1** | `#b6d0ff` / `#172b52` / `#7aa7ff` | **8.95:1** |
+| Badge `prorrogada` | `#4a2574` / `#f2ebfc` / `#7642b5` | **9.99:1** | `#d9baff` / `#2d1b47` / `#b182f5` | **9.14:1** |
+| Botón primario (`.sirec-btn-primary`) | `#ffffff` sobre `#1452c9` (hover `#0a2a66`) | **6.82:1** / **13.67:1** | `#ffffff` sobre `#1452c9` (hover `#0a2a66`) | **6.82:1** / **13.67:1** |
+
+### 6.4 Estados de interfaz (`vacío`, `cargando`, `error`, `éxito`)
+
+Cada panel incluye una región viva `.sirec-result` (`aria-live="polite"`, `aria-busy="false"`) estilizada para cuatro estados consistentes:
+- **Vacío (`.sirec-state--empty`)**: recuadro sutil con borde punteado e instrucción clara inicial.
+- **Cargando (`.sirec-state--loading`)**: indicador `.sirec-spinner` alineado al texto de espera; se vuelve estático cuando `@media (prefers-reduced-motion: reduce)` está activo.
+- **Error (`.sirec-state--error`)**: contenedor de alto contraste para mensajes amigables devueltos por SIREC o errores de red.
+- **Éxito (`.sirec-state--success` / `.sirec-card` / `.sirec-voucher`)**: tarjetas estructuradas con montos en `tabular-nums` y acciones contextuales claras.
+
+### 6.5 Diseño de impresión (`@media print`) de la Orden de Pago
+
+Al imprimir el comprobante `#orden-comprobante` (`.sirec-voucher`), la hoja `@media print` oculta cabecera, navegación, hero, servicios, cifras, noticias, transparencia, pie, pestañas, formularios y controles marcados con `.no-print`, conservando únicamente:
+- La cinta `.demo-bar` en fondo blanco con borde azul marino (ahorro de tinta y aviso visible de demostración).
+- El comprobante `.sirec-voucher` con fondo blanco, borde sólido `#0a2a66`, sin sombras, `break-inside: avoid` y la cabecera de impresión `.sirec-voucher-print-head` visible ("MuniSoke GT · Municipalidad de Soke · Orden de Pago (Demostración)").
