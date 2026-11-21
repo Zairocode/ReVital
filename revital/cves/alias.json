@@ -135,6 +135,74 @@
       "cpe": ["vmware:spring_framework"],
       "nombres": ["spring framework", "spring core", "spring webmvc"],
       "eol": {}
+    },
+    "Adobe Acrobat Reader": {
+      "cpe": ["adobe:acrobat_reader"],
+      "nombres": ["adobe acrobat reader", "adobe reader", "acrobat reader"],
+      "eol": {}
+    },
+    "Adobe Acrobat": {
+      "cpe": ["adobe:acrobat"],
+      "nombres": ["adobe acrobat", "acrobat"],
+      "eol": {}
+    },
+    "Adobe Flash Player": {
+      "cpe": ["adobe:flash_player"],
+      "nombres": ["adobe flash player", "flash player"],
+      "eol": {
+        "6": "2020-12-31",
+        "7": "2020-12-31",
+        "8": "2020-12-31",
+        "9": "2020-12-31",
+        "10": "2020-12-31",
+        "11": "2020-12-31",
+        "12": "2020-12-31",
+        "13": "2020-12-31",
+        "14": "2020-12-31",
+        "15": "2020-12-31",
+        "16": "2020-12-31",
+        "17": "2020-12-31",
+        "18": "2020-12-31",
+        "19": "2020-12-31",
+        "20": "2020-12-31",
+        "21": "2020-12-31",
+        "22": "2020-12-31",
+        "23": "2020-12-31",
+        "24": "2020-12-31",
+        "25": "2020-12-31",
+        "26": "2020-12-31",
+        "27": "2020-12-31",
+        "28": "2020-12-31",
+        "29": "2020-12-31",
+        "30": "2020-12-31",
+        "31": "2020-12-31",
+        "32": "2020-12-31"
+      }
+    },
+    "WinRAR": {
+      "cpe": ["rarlab:winrar"],
+      "nombres": ["winrar"],
+      "eol": {}
+    },
+    "7-Zip": {
+      "cpe": ["7-zip:7-zip"],
+      "nombres": ["7-zip", "7zip"],
+      "eol": {}
+    },
+    "Mozilla Firefox": {
+      "cpe": ["mozilla:firefox"],
+      "nombres": ["mozilla firefox", "firefox"],
+      "eol": {}
+    },
+    "Google Chrome": {
+      "cpe": ["google:chrome"],
+      "nombres": ["google chrome", "chrome"],
+      "eol": {}
+    },
+    "Internet Explorer": {
+      "cpe": ["microsoft:internet_explorer"],
+      "nombres": ["internet explorer", "microsoft internet explorer"],
+      "eol": {"6": "2016-01-12", "7": "2016-01-12", "8": "2016-01-12", "9": "2016-01-12", "10": "2016-01-12", "11": "2022-06-15"}
     }
   }
 }
