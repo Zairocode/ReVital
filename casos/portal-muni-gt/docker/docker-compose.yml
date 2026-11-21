@@ -1,0 +1,52 @@
+# Objetivo de demo ReVital: Portal de Transparencia Municipal (muni FICTICIA) legacy.
+#
+#   [ internet ] --8080--> Apache 2.4.49 (reverse proxy VULNERABLE)  --> Drupal 7.57 --> MariaDB
+#
+# CVEs en CISA KEV que quedan expuestos (ambos usados en ransomware):
+#   - CVE-2021-41773  : Apache 2.4.49  (path traversal / lectura de archivos / RCE con cgi)
+#   - CVE-2018-7600   : Drupal 7.57    (Drupalgeddon 2, RCE)
+#
+# USO:
+#   docker compose up -d --build
+#   luego instalar Drupal una sola vez (ver README.md de esta carpeta)
+#
+# Todo offline, red interna. NUNCA apuntar esto a un sistema real del gobierno.
+
+services:
+  db:
+    image: mariadb:10.5
+    # En Mac con chip Apple (M1/M2/M3) descomentar la siguiente linea:
+    # platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: drupal
+      MYSQL_USER: drupal
+      MYSQL_PASSWORD: drupalpw
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [interna]
+
+  drupal:
+    image: drupal:7.57
+    # platform: linux/amd64   # descomentar en Mac Apple Silicon
+    depends_on: [db]
+    volumes:
+      - drupal_files:/var/www/html/sites/default/files
+    networks: [interna]
+    # No se publica puerto: solo se llega a traves del proxy Apache 2.4.49
+
+  proxy:
+    build: ./apache          # Apache 2.4.49 con config vulnerable (ver apache/)
+    # platform: linux/amd64   # descomentar en Mac Apple Silicon
+    depends_on: [drupal]
+    ports:
+      - "8080:80"            # el portal queda en http://localhost:8080
+    networks: [interna]
+
+volumes:
+  db_data:
+  drupal_files:
+
+networks:
+  interna:
+    driver: bridge

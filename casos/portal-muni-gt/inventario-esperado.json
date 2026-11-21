@@ -1,0 +1,26 @@
+{
+  "kind": "web",
+  "target": "http://localhost:8080",
+  "entidad": "MUNI-GT (ficticia)",
+  "generado": "2026-11-21 00:00:00",
+  "components": [
+    {"producto": "drupal", "version": "7.57", "fuente": "archivo /CHANGELOG.txt (el meta generator solo dice Drupal 7)", "donde": "/CHANGELOG.txt"},
+    {"producto": "apache http_server", "version": "2.4.49", "fuente": "header Server en error 400 (el de las paginas es el del backend)", "donde": "proxy (frontend)"},
+    {"producto": "apache http_server", "version": "2.4.10", "fuente": "header Server del backend / imagen drupal:7.57", "donde": "backend detras del proxy"},
+    {"producto": "php", "version": "7.0.28", "fuente": "header X-Powered-By", "donde": "backend"},
+    {"producto": "mariadb", "version": "10.5.29", "fuente": "docker-compose (no visible por web; lo veria un colector de host/red)", "donde": "contenedor db"}
+  ],
+  "extra": {
+    "cpe": ["cpe:2.3:a:drupal:drupal:7.57", "cpe:2.3:a:apache:http_server:2.4.49", "cpe:2.3:a:apache:http_server:2.4.10"],
+    "kev_esperados": ["CVE-2018-7600", "CVE-2021-41773"],
+    "kev_condicionales": {
+      "CVE-2021-42013": "solo si Apache 2.4.50",
+      "CVE-2019-6340": "solo si modulo RESTful activo",
+      "CVE-2024-38475": "Apache 2.4.10 backend (mod_rewrite, afecta <2.4.60); aplica si hay reglas RewriteRule vulnerables"
+    },
+    "ransomware_known": ["CVE-2018-7600", "CVE-2021-41773"],
+    "nota_dos_apache": "El objetivo expone DOS versiones de Apache: proxy 2.4.49 (CVE-2021-41773) y backend 2.4.10 (CVE-2024-38475, KEV). El cruce de CVEs debe considerar ambas.",
+    "eol": {"drupal 7": "2025-01-05", "apache 2.4.49": "superada por parche 2.4.51", "apache 2.4.10": "2014, muy anterior a EOL de la rama 2.4"},
+    "nota_legal": "Institucion ficticia. Replica local offline. No escanear portales reales."
+  }
+}
