@@ -1,14 +1,17 @@
 """Servidor del panel (solo stdlib). Escucha SOLO en 127.0.0.1: los hallazgos son informacion sensible."""
-import os, re, subprocess, sys, threading, time
+import json, os, re, subprocess, sys, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
 from revital import inventory
-from revital.panel import datos, vistas
+from revital.panel import datos, vigilancia, vistas
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TIPOS = {".md": "text/markdown; charset=utf-8", ".json": "application/json; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
 ENTIDAD_OK = re.compile(r"^[\w .\-]{1,60}$")
+STATIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+TIPOS_STATIC = {".js": "application/javascript; charset=utf-8", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
+SSL_FALLA = re.compile(r"ssl|certificate|tlsv|wrong version|handshake|unsupported protocol", re.I)
 
 
 class Panel(object):
@@ -37,6 +40,12 @@ class Panel(object):
             try:
                 rc, out = self.correr(cmd)
                 t["log"] += out
+                if tipo == "web" and not insecure and self.fallo_tls(destino):
+                    # servidor viejo (TLS 1.0, certificado vencido/autofirmado): se reintenta en modo compatible
+                    t["log"] += "\nServidor viejo detectado: se reintenta en modo compatible (TLS 1.0 / certificado no valido).\n"
+                    t["compatible"] = True
+                    rc, out = self.correr(cmd + ["--insecure"])
+                    t["log"] += out
                 # el cruce corre SIEMPRE: si el objetivo no respondio, el reporte dice SIN DATOS en vez de dejar visible el resultado viejo
                 rc2, out2 = self.correr(["revital.cves", "--out", self.salida, "--entidad", entidad])
                 t["log"] += "\n" + out2
@@ -47,9 +56,30 @@ class Panel(object):
         threading.Thread(target=hacer, daemon=True).start()
         return t
 
+    def fallo_tls(self, destino):
+        """El crawler no pudo entrar a la pagina de inicio por un problema de TLS/certificado."""
+        inv = datos.leer(os.path.join(self.salida, "inventario-web-%s.json" % inventory.slug(destino)), {}) or {}
+        pags = (inv.get("extra") or {}).get("pages") or []
+        return bool(pags) and all(p.get("error") for p in pags) and any(SSL_FALLA.search(p.get("error", "")) for p in pags)
+
+    def firma(self):
+        """Cambia cuando cambia algo que el panel muestra: sirve para recargar la pantalla sola."""
+        partes = []
+        if os.path.isdir(self.salida):
+            for n in sorted(os.listdir(self.salida)):
+                if n.endswith((".json", ".jsonl", ".md")):
+                    try:
+                        partes.append("%s:%d" % (n, os.path.getmtime(os.path.join(self.salida, n))))
+                    except OSError:
+                        pass
+        with self.lock:
+            partes += ["%s:%s" % (t["inicio"], t["estado"]) for t in self.trabajos]
+        return str(abs(hash("|".join(partes))))
+
 
 def crear(salida="salida", puerto=8765, config="sentinela.json"):
     panel = Panel(salida, config)
+    vigilancia.iniciar(panel.salida, RAIZ)
 
     class H(BaseHTTPRequestHandler):
         server_version = "ReVital"
@@ -95,7 +125,10 @@ def crear(salida="salida", puerto=8765, config="sentinela.json"):
                 with panel.lock:
                     pass
                 msg = (q.get("msg") or [""])[0]
-                return self._enviar(200, vistas.inicio(datos.entidades(sal), datos.alertas(sal), datos.estado_sentinela(sal), msg))
+                with panel.lock:
+                    lista = list(panel.trabajos)
+                return self._enviar(200, vistas.inicio(datos.entidades(sal), datos.alertas(sal), datos.estado_sentinela(sal), msg,
+                                                       trabajos=lista, sel=(q.get("e") or [""])[0]))
             if ruta.startswith("/e/"):
                 x = datos.entidad(sal, ruta[3:])
                 if not x:
@@ -103,7 +136,19 @@ def crear(salida="salida", puerto=8765, config="sentinela.json"):
                 tab = (q.get("tab") or ["resumen"])[0]
                 nombre = x["entidad"]
                 return self._enviar(200, vistas.entidad(x, tab, datos.alertas(sal, entidad=nombre), datos.historial(sal, x["slug"]),
-                                                        datos.archivos(sal, x["slug"], nombre), todos=("todos" in q), filtro=(q.get("f") or [""])[0]))
+                                                        datos.archivos(sal, x["slug"], nombre), todos=("todos" in q), filtro=(q.get("f") or [""])[0],
+                                                        vigilada=vigilancia.vigilada(sal, nombre)))
+            if ruta.startswith("/static/"):
+                nombre = ruta[len("/static/"):]
+                ext = os.path.splitext(nombre)[1].lower()
+                if nombre != os.path.basename(nombre) or ext not in TIPOS_STATIC or nombre not in os.listdir(STATIC):
+                    return self._err(404, "Archivo no encontrado.")
+                with open(os.path.join(STATIC, nombre), "rb") as fh:
+                    return self._enviar(200, fh.read(), TIPOS_STATIC[ext])
+            if ruta == "/api/estado":
+                with panel.lock:
+                    curso = sum(1 for t in panel.trabajos if t["estado"] == "en curso")
+                return self._enviar(200, json.dumps({"v": panel.firma(), "en_curso": curso}), "application/json; charset=utf-8")
             if ruta.startswith("/ver/") or ruta.startswith("/descargar/"):
                 nombre = ruta.split("/", 2)[2]
                 p = datos.ruta_segura(sal, nombre)
@@ -159,6 +204,8 @@ def crear(salida="salida", puerto=8765, config="sentinela.json"):
             ruta = urlparse(self.path).path
             if ruta == "/analizar":
                 tipo, destino, ent = campo("tipo"), campo("destino"), campo("entidad")
+                if not tipo:  # un solo buscador: una URL es un sitio web; lo demas, una carpeta
+                    tipo = "web" if re.match(r"^https?://", destino, re.I) else "codigo"
                 if not campo("autorizo"):
                     return self._err(400, "Hay que confirmar que tienes autorización para analizar este sistema.")
                 if tipo not in ("web", "codigo") or not ENTIDAD_OK.match(ent):
@@ -168,10 +215,16 @@ def crear(salida="salida", puerto=8765, config="sentinela.json"):
                 if tipo == "codigo" and not os.path.isdir(destino):
                     return self._err(400, "La carpeta no existe en este equipo: %s" % destino)
                 panel.lanzar(tipo, destino, ent, bool(campo("insecure")))
-                return self._redir("/trabajos")
+                return self._redir("/?e=%s" % (inventory.slug(ent) or ""))
             if ruta == "/demo":
                 rc, out = panel.correr(["revital.cves", "--demo", "--out", panel.salida])
                 return self._redir("/?msg=" + ("Demostración cargada." if rc == 0 else "No se pudo cargar la demostración."))
+            if ruta == "/vigilar":
+                x = datos.entidad(panel.salida, campo("slug"))
+                if not x:
+                    return self._err(404, "No hay una entidad con ese nombre.")
+                vigilancia.cambiar(panel.salida, x["entidad"], campo("activar") == "1")
+                return self._redir("/e/%s" % x["slug"])
             if ruta == "/vigilar-ahora":
                 cfg = panel.config if os.path.isfile(panel.config) else os.path.join(RAIZ, "sentinela.json")
                 if not os.path.isfile(cfg):
