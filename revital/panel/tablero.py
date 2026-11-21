@@ -6,35 +6,31 @@ hallazgos-<entidad>.json que produce revital.cves. Si falta un dato, el widget m
 import html, math, time
 
 e = html.escape
-ROJO, VERDE, GRIS, GRIS2, BLANCO = "#e10600", "#22c55e", "#3a3a3a", "#262626", "#ffffff"
+ROJO, VERDE, GRIS, GRIS2, BLANCO = "#ff5a3c", "#34c38f", "#2c2c30", "#232326", "#d4d4d8"
 
 CSS = """
-.tb{color:#fff;margin:0 0 22px;font-family:"Segoe UI",Arial,sans-serif}
-.tb .fila{display:flex;flex-wrap:wrap;margin:0 -8px 0}
-.tb .w{flex:1 1 260px;margin:8px;padding:18px 20px 16px;min-width:240px;position:relative;border:1px solid #2c2c2c;border-radius:4px;
-background:#0b0c0f;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
-.tb .w:before{content:"";position:absolute;top:-1px;right:-1px;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #5a5a5a transparent transparent}
-.tb .w:after{content:"";position:absolute;bottom:-1px;left:-1px;border-style:solid;border-width:16px 0 0 16px;border-color:transparent transparent transparent #5a5a5a}
-.tb .w.mal{border-color:rgba(225,6,0,.65);background:#140405;background:linear-gradient(135deg,rgba(225,6,0,.22),rgba(225,6,0,.04))}
-.tb .w.mal:before{border-right-color:#e10600} .tb .w.mal:after{border-left-color:#e10600} .tb .w.mal .lb{color:#ff3b30}
-.tb .w.bien{border-color:rgba(34,197,94,.6);background:#04120a;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.04))}
-.tb .w.bien:before{border-right-color:#22c55e} .tb .w.bien:after{border-left-color:#22c55e} .tb .w.bien .lb{color:#22c55e}
+.tb{color:#fff;margin:0 0 8px;font-family:"Segoe UI",Arial,sans-serif}
+.tb .fila{display:flex;flex-wrap:wrap;margin:0 -9px}
+.tb .w{flex:1 1 260px;margin:9px;padding:20px 22px 18px;min-width:240px;position:relative;background:#1a1a1c;border-radius:20px}
 .tb .w2{flex:2 1 420px}
-.tb .lb{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#e5e5e5;margin:0 0 8px}
-.tb .big{font-size:50px;font-weight:700;line-height:1;margin:6px 0 12px;letter-spacing:-1px}
-.tb .big small{font-size:20px;font-weight:600;margin-left:4px;letter-spacing:0}
-.tb .mut{color:#8a8a8a;font-size:13px} .tb .r{color:#e10600} .tb .g{color:#22c55e}
+.tb .w:after{position:absolute;top:18px;right:18px;font-size:12px;font-weight:600;border-radius:8px;padding:3px 9px}
+.tb .w.mal:after{content:"Vulnerable";color:#ff6b57;background:rgba(255,90,60,.14)}
+.tb .w.bien:after{content:"Correcto";color:#34c38f;background:rgba(52,195,143,.14)}
+.tb .ico{display:none}
+.tb .lb{font-size:15px;font-weight:600;color:#f2f2f2;margin:0 90px 10px 0}
+.tb .big{font-size:36px;font-weight:700;line-height:1.1;margin:8px 0 14px;color:#fff}
+.tb .big small{font-size:16px;font-weight:600;margin-left:4px;color:#8a8a8f}
+.tb .mut{color:#7d7d82;font-size:13px} .tb .r{color:#ff6b57} .tb .g{color:#34c38f}
+.tb .big.r,.tb .big.g{color:#fff}
 .tb .cab{display:flex;justify-content:space-between;align-items:flex-start}
-.tb .ico{width:54px;height:54px;border-radius:50%;background:#fff;display:inline-block;text-align:center;flex:0 0 54px}
-.tb .ico svg{margin-top:13px}
-.tb .sep{border-left:1px solid rgba(255,255,255,.15)} .tb .w.sep{border-left:1px solid}
-.tb .kv{font-size:12px;letter-spacing:.6px;color:#cfcfcf;margin:10px 0 0;text-transform:uppercase}
-.tb .kv b{display:block;font-size:15px;letter-spacing:0;color:#fff;text-transform:none;line-height:1.35}
-.tb .kv b.r{color:#e10600} .tb .kv b.g{color:#22c55e}
-.tb table{background:transparent;border:0;font-size:14px} .tb td{border:0;padding:5px 6px 5px 0;color:#fff;vertical-align:middle}
-.tb .ley{font-size:12px;letter-spacing:.6px;color:#cfcfcf;margin:6px 0 0}
-.tb .ley span{display:inline-block;width:18px;height:3px;margin:0 6px 3px 14px;vertical-align:middle}
-.tb .pie2{color:#6b6b6b;font-size:12px;padding:8px 0 4px}
+.tb .sep{border-left:1px solid #2c2c30}
+.tb .kv{font-size:12px;color:#8a8a8f;margin:10px 0 0}
+.tb .kv b{display:block;font-size:15px;color:#f2f2f2;font-weight:600;line-height:1.35}
+.tb .kv b.r{color:#ff6b57} .tb .kv b.g{color:#34c38f}
+.tb table{background:transparent;border:0;padding:0;font-size:14px;border-radius:0} .tb td{border:0;padding:6px 6px 6px 0;color:#e5e5e5;vertical-align:middle}
+.tb .ley{font-size:12px;color:#a1a1a6;margin:6px 0 0}
+.tb .ley span{display:inline-block;width:18px;height:3px;border-radius:2px;margin:0 6px 3px 14px;vertical-align:middle}
+.tb .pie2{color:#5a5a5f;font-size:12px;padding:6px 0 4px}
 """
 
 # Iconos (negro sobre el circulo blanco). Formas simples para que se vean igual en navegadores viejos.
@@ -93,7 +89,7 @@ def anillo(ok, total, ticks=60, r=62):
         out.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="3.200" stroke-linecap="round"/>' % (
             _f(x1), _f(y1), _f(x2), _f(y2), VERDE if i < verdes else ROJO))
     escudo = ('<g transform="translate(%s %s) scale(1.400)">%s</g>' % (_f(c - 19.6), _f(c - 19.6),
-              ICONOS["escudo"].replace("#000", BLANCO)))
+              ICONOS["escudo"].replace("#000", "#8a8a8f")))
     return '<svg width="%d" height="%d">%s%s</svg>' % (2 * c, 2 * c, "".join(out), escudo)
 
 
@@ -105,7 +101,7 @@ def semicirculo(valor, bien):
         largo = 14 if i % 5 == 0 else 8
         x1, y1 = cx + (r - largo) * math.cos(a), cy + (r - largo) * math.sin(a)
         x2, y2 = cx + r * math.cos(a), cy + r * math.sin(a)
-        out.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#bdbdbd" stroke-width="2"/>' % (_f(x1), _f(y1), _f(x2), _f(y2)))
+        out.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#4a4a50" stroke-width="2"/>' % (_f(x1), _f(y1), _f(x2), _f(y2)))
     a = math.pi + math.pi * max(0.0, min(1.0, valor))
     nx, ny = cx + (r - 2) * math.cos(a), cy + (r - 2) * math.sin(a)
     col = VERDE if bien else ROJO
@@ -138,10 +134,10 @@ def curva(conteos, ancho=430, alto=150):
     etiquetas = "".join('<text x="%s" y="%d" fill="#8a8a8a" font-size="11" text-anchor="middle" '
                         'font-family="Segoe UI,Arial,sans-serif">%d</text>' % (_f(xs[i]), alto - 2, i) for i in range(0, n, 2))
     return ('<svg width="%d" height="%d"><defs><linearGradient id="tbg" x1="0" y1="0" x2="0" y2="1">'
-            '<stop offset="0" stop-color="#e10600" stop-opacity=".85"/><stop offset="1" stop-color="#e10600" stop-opacity="0"/>'
+            '<stop offset="0" stop-color="#ff5a3c" stop-opacity=".55"/><stop offset="1" stop-color="#ff5a3c" stop-opacity="0"/>'
             '</linearGradient></defs><path d="%s" fill="url(#tbg)"/>%s<path d="%s" fill="none" stroke="%s" stroke-width="3"/>'
-            '<line x1="%s" y1="%s" x2="%s" y2="%d" stroke="#fff" stroke-dasharray="3 4"/>'
-            '<circle cx="%s" cy="%s" r="8" fill="#050505" stroke="#fff" stroke-width="2.500"/><circle cx="%s" cy="%s" r="4" fill="#fff"/>%s</svg>'
+            '<line x1="%s" y1="%s" x2="%s" y2="%d" stroke="#6b6b70" stroke-dasharray="3 4"/>'
+            '<circle cx="%s" cy="%s" r="8" fill="#1a1a1c" stroke="#ff5a3c" stroke-width="2.500"/><circle cx="%s" cy="%s" r="4" fill="#ff5a3c"/>%s</svg>'
             % (ancho, alto, area, guias, d, ROJO, _f(xs[pico]), _f(ys[pico] + 9), _f(xs[pico]), alto - 18,
                _f(xs[pico]), _f(ys[pico]), _f(xs[pico]), _f(ys[pico]), etiquetas))
 
@@ -160,10 +156,10 @@ def lineas(etiquetas_x, series, ancho=470, alto=190):
         out.append('<text x="%d" y="%s" fill="#cfcfcf" font-size="12" text-anchor="end" font-family="Segoe UI,Arial,sans-serif">%d</text>'
                    % (x0 - 10, _f(py(v) + 4), v))
     for i, et in enumerate(etiquetas_x):
-        out.append('<line x1="%s" y1="%d" x2="%s" y2="%d" stroke="#555" stroke-dasharray="3 4"/>' % (_f(px(i)), y0, _f(px(i)), y1))
+        out.append('<line x1="%s" y1="%d" x2="%s" y2="%d" stroke="#2c2c30"/>' % (_f(px(i)), y0, _f(px(i)), y1))
         out.append('<text x="%s" y="%d" fill="#cfcfcf" font-size="12" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif">%s</text>'
                    % (_f(px(i)), alto - 12, e(et)))
-    out.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#888"/><line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#888"/>'
+    out.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#2c2c30"/><line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#2c2c30"/>'
                % (x0, y0, x0, y1, x0, y1, x1, y1))
     for _, color, vals in series:
         pts = " ".join("%s,%s" % (_f(px(i)), _f(py(v))) for i, v in enumerate(vals))
@@ -277,7 +273,7 @@ def html_tablero(h):
     # fila 3: curva de gravedad y riesgo por componente
     b.append('<div class="fila">')
     alta = sum(s["cvss"][7:])
-    b.append('<div class="w w2 %s"><div class="lb">Gravedad de lo encontrado (CVSS 0-10)</div>' % ("mal" if alta else "bien") + '<div style="display:flex;align-items:center;flex-wrap:wrap">%s'
+    b.append('<div class="w w2 %s"><div class="lb">Gravedad de lo encontrado</div>' % ("mal" if alta else "bien") + '<div style="display:flex;align-items:center;flex-wrap:wrap">%s'
              '<div style="margin-left:14px"><div style="font-size:24px;font-weight:800" class="%s">%s</div>'
              '<div style="font-weight:700">EXPOSICION</div><div class="mut">%d de %d con CVSS 7 o mas</div></div></div></div>'
              % (curva(s["cvss"]) if s["total"] else '<div class="mut" style="width:430px">sin hallazgos</div>',
@@ -310,8 +306,8 @@ def html_tablero(h):
         graf = lineas(s["anios"], [("KEV", ROJO, s["linea_kev"]), ("Con exploit", BLANCO, s["linea_exp"])])
     else:
         graf = '<div class="mut" style="padding:30px 0">sin historial suficiente</div>'
-    b.append('<div class="w w2 %s"><div class="lb">Vulnerabilidades explotadas acumuladas' % ("mal" if s["kev"] else "bien") + ' (por ano de ingreso a KEV)</div>%s'
-             '<div class="ley"><span style="background:#e10600"></span>EXPLOTADAS (KEV)<span style="background:#fff"></span>CON EXPLOIT PUBLICO</div></div>'
+    b.append('<div class="w w2 %s"><div class="lb">Vulnerabilidades explotadas acumuladas' % ("mal" if s["kev"] else "bien") + '</div><div class="mut" style="margin:-6px 0 8px">por año en que entraron al catálogo KEV</div>%s'
+             '<div class="ley"><span style="background:#ff5a3c"></span>Explotadas (KEV)<span style="background:#d4d4d8"></span>Con exploit publico</div></div>'
              % graf)
     b.append('</div>')
     b.append('<div class="pie2">Verde = correcto · Rojo = vulnerable · Datos: CISA KEV, NVD y Exploit-DB (indice). Evaluado el %s.</div></div>'
