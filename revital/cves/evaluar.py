@@ -1,7 +1,7 @@
 """Cruce: componentes de los inventarios -> CVE que afectan su version -> en KEV? -> nivel de prioridad."""
 import json, os
 
-from revital.cves import normalizar, versiones
+from revital.cves import catalogo as cat_mod, normalizar, versiones
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 
@@ -128,6 +128,9 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
                              agregado_kev=k.get("dateAdded", ""), fecha_limite=k.get("dueDate", ""),
                              vencido=k.get("dueDate", "9999") < hoy, accion=k.get("requiredAction", ""))
                 h["exploits"] = edb.get(cve, [])
+                h["exploit_metasploit"] = any(cat_mod.edb(x, cat_mod.EDB_MSF, 0) for x in h["exploits"])
+                h["alias"] = next((cat_mod.edb(x, cat_mod.EDB_ALIAS) for x in h["exploits"]
+                                   if cat_mod.edb(x, cat_mod.EDB_ALIAS)), "")
                 h["parche"] = parche(comp["producto"], rango, [r for c, r in idx.get(cpe, []) if c == cve])
                 if fin:
                     h["parche"] += " La rama %s ya no tiene soporte desde %s: el parche no basta, planificar migracion." % fin
@@ -143,7 +146,8 @@ def evaluar(inventarios, catalogo, alias, reglas, hoy):
                         res["posibles"].append(h)
                 else:
                     res["hallazgos"].append(h)
-    orden = lambda h: (h["nivel"], -(h["cvss"] or 0), h["cve"])
+    # dentro de cada nivel: primero lo que tiene modulo de Metasploit (mas facil de atacar), luego CVSS
+    orden = lambda h: (h["nivel"], not h.get("exploit_metasploit"), -(h["cvss"] or 0), h["cve"])
     for k in ("hallazgos", "condicionales", "posibles"):
         res[k].sort(key=orden)
     return res

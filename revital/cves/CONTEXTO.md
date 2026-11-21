@@ -99,7 +99,7 @@ No leemos nada propio de cada colector. Solo el contrato de `revital/inventory.p
 |---|---|---|---|
 | **CISA KEV** | Qué CVE se explotan activamente, si los usa ransomware, acción requerida y fecha límite | Qué versiones afecta | `catalogos/kev.json` |
 | **NVD** (NIST), extracto KEV | Qué versiones afecta cada CVE de KEV (CPE + rangos) y su CVSS | Si se está explotando | `catalogos/nvd-kev.json` |
-| **Exploit-DB** (índice) | Si existe código de ataque **público** para la CVE (id, verificado, tipo) | Si alguien lo está usando (eso es KEV) | `revital/cves/exploitdb.json` |
+| **Exploit-DB** (índice) | Si existe código de ataque **público** para la CVE: número, verificado, tipo, plataforma, puerto, si hay **módulo de Metasploit** y el alias (ej. "Drupalgeddon2") | Si alguien lo está usando (eso es KEV) | `revital/cves/exploitdb.json` |
 | **NVD** completo, opcional | Lo mismo para **todas** las CVE de los productos de `alias.json`, no solo KEV (sección 4 del reporte) | — | `revital/cves/datos/nvd_min.json` (local, no se sube) |
 
 Los dos primeros los congeló el equipo en `catalogos/` con `python scripts/actualizar_catalogos.py` (ver `catalogos/LEEME.md`): son **la fuente oficial** y viajan con el repo. El tercero es un extra que cada quien genera con `python -m revital.cves --actualizar` si quiere ver también las CVE que no están en KEV; pesa unos 8 MB y por eso no se sube.
@@ -123,7 +123,7 @@ KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD
 | **CVE condicionales aparte** (`reglas.json`) | Algunos CVE solo aplican con cierta configuración que no se ve desde fuera (ej. CVE-2024-38475, reglas de mod_rewrite). Se reportan como "verificar", no como confirmados. |
 | **Configuración insegura** separada de los CVE | `TLS 1.0` o un `web.config` en modo depuración no son software con CVE, pero son riesgos que se corrigen cambiando configuración, sin parche. Antes caían en "sin equivalencia en NVD". |
 | **Fin de soporte (EOL)** separado de los CVE | Un Drupal 7 no recibirá más parches: la recomendación no es "parchar" sino "planificar migración". Importante para gobierno. |
-| **Exploit-DB como señal, no como fuente** | Que exista un exploit público no prueba que se esté usando (eso lo dice KEV), pero sí que cualquiera puede atacar. Por eso va **después** de KEV y **antes** del CVSS. Un exploit solo de denegación de servicio (`dos`) no sube el nivel. |
+| **Exploit-DB como señal, no como fuente** | Que exista un exploit público no prueba que se esté usando (eso lo dice KEV), pero sí que cualquiera puede atacar. Por eso va **después** de KEV y **antes** del CVSS. Un exploit solo de denegación de servicio (`dos`) no sube el nivel. Dentro de un mismo nivel va primero lo que tiene **módulo de Metasploit**: está empaquetado y lo lanza cualquiera. |
 | **Parche calculado, mitigación curada** | La versión corregida sale sola del rango de NVD ("hasta antes de 2.4.60" → actualizar a 2.4.60). La mitigación temporal no existe en ningún catálogo: se escribe a mano en `reglas.json` solo para las CVE importantes, y se probó en Apache + ModSecurity reales (ataque = 403, uso normal = 200). |
 | **Solo lectura** | Nunca se descargan ni ejecutan exploits; de Exploit-DB solo se lee el índice (número, título, tipo, si está verificado). |
 
@@ -244,7 +244,8 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 
 ## 12. Pendiente
 
-- [x] **Exploit-DB** como señal extra (nivel 4) y en cada hallazgo KEV.
+- [x] **Exploit-DB** como señal extra (nivel 4) y en cada hallazgo KEV, con Metasploit, alias, plataforma/puerto y enlace a la ficha pública (nunca el código).
+- [ ] Panel (`revital/panel/datos.py`, de Zairocode): agregar `"ALTO (exploit publico)"` a `ORDEN_NIVEL` y a los colores; hoy lo ordena al final.
 - [x] **Mitigación sugerida por CVE** (parche calculado + mitigaciones curadas para el caso y Log4Shell).
 - [ ] Generar `revital/cves/exploitdb.json` con el índice completo (`--exploitdb`, necesita internet) y subirlo.
 - [ ] Más mitigaciones en `reglas.json` para los productos que aparezcan en las demos.
