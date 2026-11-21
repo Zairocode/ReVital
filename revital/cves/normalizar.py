@@ -35,10 +35,29 @@ def identificar(producto, alias):
     return oficial, [cpe_corto(c) for c in prods[oficial]["cpe"]]
 
 
+def indice_automatico(cpes, minimo=4):
+    """Cruce automatico por nombre: 'Windows 7' -> microsoft:windows_7, 'Microsoft Exchange Server' ->
+    microsoft:exchange_server, sin escribirlos en alias.json. Solo coincidencias EXACTAS del nombre completo:
+      - el producto solo ('windows 7'), si ningun otro fabricante usa ese mismo nombre (si no, es ambiguo);
+      - o fabricante + producto ('microsoft exchange server'), que nunca es ambiguo.
+    Nombres de menos de `minimo` letras se ignoran (evita cruces con nombres genericos)."""
+    por_producto, out = {}, {}
+    for cpe in cpes:
+        if ":" not in cpe:
+            continue
+        vendor, prod = cpe.split(":", 1)
+        por_producto.setdefault(clave(prod), set()).add(cpe)
+        out[clave(vendor + " " + prod)] = [cpe]
+    for nombre, cs in por_producto.items():
+        if len(cs) == 1 and len(nombre.replace(" ", "")) >= minimo:
+            out.setdefault(nombre, sorted(cs))
+    return out
+
+
 def eol(oficial, version, alias, hoy):
     """-> (rama, fecha_fin) si la version esta en una rama sin soporte a la fecha 'hoy' (YYYY-MM-DD)."""
-    if not oficial or not version:
-        return None
+    if not oficial or not version or oficial not in alias[0]:
+        return None  # sin version o producto cruzado automaticamente (sin datos de fin de soporte)
     pv = [p[0] for p in versiones.partes(version)]
     for rama, fin in alias[0][oficial].get("eol", {}).items():
         pr = [p[0] for p in versiones.partes(rama)]

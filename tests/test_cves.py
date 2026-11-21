@@ -99,6 +99,21 @@ assert "CVE-2018-7600 (Drupalgeddon2)" in texto and "EDB-44482 (Metasploit, veri
 assert "[EDB-44482](https://www.exploit-db.com/exploits/44482)" in texto
 assert json.load(open(js, encoding="utf-8"))["entidad"] == "MUNI-GT"
 
+# --- cruce automatico por nombre exacto de NVD (productos que no estan en alias.json) ---
+auto = normalizar.indice_automatico(["microsoft:windows_7", "microsoft:exchange_server", "acme:server", "otra:server", "x:ab"])
+assert auto["windows 7"] == ["microsoft:windows_7"]                       # 'Windows 7' del colector host
+assert auto["microsoft exchange server"] == ["microsoft:exchange_server"]  # fabricante + producto
+assert "server" not in auto                                               # ambiguo: dos fabricantes
+assert "acme server" in auto and "ab" not in auto                         # nombre muy corto: ignorado
+w7 = inventory.nuevo("host", "PC-1", "MUNI-GT")
+w7["components"] = [inventory.componente("Windows 7", "6.1.7601", "registro", "PC-1"),
+                    inventory.componente("Cosa Rara", "1.0", "x", "PC-1")]
+r_auto = evaluar.evaluar([w7], cat, alias, reglas, "2026-11-21")
+assert [c["mapeo"] for c in r_auto["componentes"] if c["producto"] == "Windows 7"] == ["automatico"] or \
+    not cat["indice"].get("microsoft:windows_7")                          # los datos demo no traen Windows
+assert any(c["producto"] == "Cosa Rara" for c in r_auto["sin_mapeo"])
+assert {c["mapeo"] for c in res["componentes"]} == {"alias"}               # el caso web no cambia
+
 # --- TLS obsoleto (crawler) y alertas de configuracion (colector de codigo) ---
 web = inventory.nuevo("web", "https://portal.gob", "MUNI-GT")
 web["components"] = [inventory.componente("TLS", "1.0", "protocolo obsoleto aceptado por el servidor", "portal.gob"),
@@ -132,4 +147,7 @@ if os.path.exists(os.path.join(catalogo.CATALOGOS, "kev.json")):
     assert {"CVE-2018-7600", "CVE-2018-7602", "CVE-2021-41773", "CVE-2021-42013", "CVE-2021-40438"} <= crit, crit
     assert all(h["en_kev"] for h in r2["hallazgos"])
     print("catalogos/: KEV %s, %d hallazgos KEV en el caso" % (real["info"]["kev_version"], len(r2["hallazgos"])))
+    r3 = evaluar.evaluar([w7], real, alias, reglas, "2026-11-21")
+    w7h = {h["cve"] for h in r3["hallazgos"] if h["producto"] == "Windows 7"}
+    assert "CVE-2019-0708" in w7h and len(w7h) > 50, len(w7h)             # BlueKeep, por cruce automatico
 print("ok")

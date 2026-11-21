@@ -116,6 +116,7 @@ KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD
 
 | Decisión | Por qué |
 |---|---|
+| **Cruce automático por nombre exacto** como respaldo de `alias.json` | Si un producto no está en `alias.json`, se busca su nombre **exacto** entre los productos de NVD ("Windows 7" → `microsoft:windows_7`, "Microsoft Exchange Server" → `microsoft:exchange_server`). Solo coincidencias completas, nunca parciales; si dos fabricantes usan el mismo nombre se descarta por ambiguo; nombres de menos de 4 letras se ignoran. Queda marcado en el inventario del reporte. Se apaga con `reglas.json > cruce_automatico: false`. Con esto el Windows 7 de prueba del colector `host` pasó de 39 a 138 KEV. |
 | **Tabla de alias** (`alias.json`) en vez de adivinar nombres | Los colectores escriben "Apache", "Microsoft-IIS", "apache http_server"; NVD usa `apache:http_server`. El docs del equipo ya lo marcaba como la parte más difícil. Agregar un producto = editar JSON, no código. |
 | **Versiones como números**, no texto | Como texto `"10.0" < "9.9"`. Además: `1.3.3c > 1.3.3` (ProFTPD, OpenSSL) y `7.5-beta < 7.5`. |
 | **Versión incompleta = "posible"** | El meta generator dice "Drupal 7"; con eso no se puede confirmar nada. Si otra fuente dio 7.57, se usa esa y la evidencia de "Drupal 7" se une a la fila de 7.57. Si solo hay "7", se listan solo los KEV de la rama como "posibles". |
@@ -238,6 +239,7 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 - **Nuevo producto:** agregarlo a `alias.json` con los nombres que usan los colectores y su CPE de NVD (se busca en <https://nvd.nist.gov/products/cpe/search>), después `--actualizar --productos <nombre>`.
 - **Nueva mitigación:** agregarla a `reglas.json > mitigaciones` con `mitigacion` (texto) y `regla` (ejemplo de configuración). Probarla antes: el ataque debe dar 403 y el uso normal 200.
 - **Nuevo CVE condicional:** agregarlo a `reglas.json > condicionales` con el texto de qué verificar.
+- **Cruce automático:** si el colector manda el nombre exacto de NVD, no hace falta tocar nada. `alias.json` solo hace falta para nombres "de la calle" ("Microsoft-IIS", "httpd") y para las fechas de fin de soporte.
 - **Coordinación con los colectores:** si un colector emite un nombre nuevo, aparece en el reporte bajo "Sin equivalencia en NVD"; ahí se ve qué falta en `alias.json`.
 
 ---
