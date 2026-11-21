@@ -21,6 +21,8 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, "<urlset><url><loc>http://%s/oculta</loc></url></urlset>" % self.headers["Host"], ctype="application/xml")
         if p == "/oculta":
             return self.send(200, "<title>Oculta</title>", {"Server": "Apache/2.0.52"})
+        if p == "/informe.pdf":
+            return self.send(200, b"%PDF-1.4 /Producer (Acrobat Distiller 8.0.0)", ctype="application/pdf")
         if p == "/nada":                  # pagina de error con version
             return self.send(404, "<h3>Apache Tomcat/5.5.23</h3>")
         self.send(200, '<title>Inicio</title><a href="/ver?id=1">v</a><a href="/fuera">f</a><a href="/nada">n</a>'
@@ -30,7 +32,7 @@ class H(BaseHTTPRequestHandler):
     def send(self, code, body, hdr=None, ctype="text/html"):
         self.send_response(code); self.send_header("Content-Type", ctype)
         for k, v in (hdr or {}).items(): self.send_header(k, v)
-        self.end_headers(); self.wfile.write(body.encode())
+        self.end_headers(); self.wfile.write(body if isinstance(body, bytes) else body.encode())
 
 
 srv = HTTPServer(("127.0.0.1", 0), H)
@@ -46,5 +48,6 @@ assert ("ASP Clasico", "") in prods, prods
 assert any(d.endswith("informe.pdf") for d in inv["extra"]["documentos"])
 assert any(p["url"].endswith("/oculta") for p in pages) and ("Apache", "2.0.52") in prods, "sitemap no usado"
 assert inv["extra"]["robots_disallow"] == ["/admin/"], inv["extra"]["robots_disallow"]
+assert ("Acrobat Distiller", "8.0.0") in prods, "metadato de documento no leido"
 assert not any("jsessionid" in p["url"] for p in pages)
 print("ok", len(pages), "paginas")

@@ -4,7 +4,7 @@ Solo stdlib, compatible con Python 3.8+ (Windows 7 en adelante).
 Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--scope host2,host3] [--out salida]
 Solo contra sistemas propios o con autorizacion.
 """
-import argparse, os, re, ssl, sys, time
+import argparse, io, os, re, ssl, sys, time, zipfile
 from collections import Counter, deque
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse, urldefrag, urlunparse
@@ -109,6 +109,25 @@ def fetch(url, ctx, allowed, timeout=15, retries=2):
             time.sleep(1 + i)
 
 
+def meta_documento(raw, nombre):
+    """Software que creo el documento (revela versiones de Office/Acrobat). -> [(producto, version)]"""
+    out = []
+    if raw[:4] == b"%PDF":
+        for campo in (b"Producer", b"Creator"):
+            m = re.search(rb"/" + campo + rb"\s*\(([^)]{3,80})\)", raw)
+            if m:
+                out.append(split_ver(m.group(1).decode("latin-1")))
+    elif raw[:2] == b"PK":  # docx/xlsx/pptx son zip con docProps/app.xml
+        try:
+            app = zipfile.ZipFile(io.BytesIO(raw)).read("docProps/app.xml").decode("utf-8", "replace")
+            a, v = re.search(r"<Application>(.*?)</Application>", app), re.search(r"<AppVersion>(.*?)</AppVersion>", app)
+            if a:
+                out.append((a.group(1), v.group(1) if v else ""))
+        except Exception:
+            pass
+    return out
+
+
 def normalize(url):
     """Quita fragmento y ids de sesion en URL para no recorrer la misma pagina mil veces."""
     u = urlparse(urldefrag(url)[0])
@@ -174,7 +193,7 @@ def descubrir(start, ctx, allowed, timeout):
     return urls[:500], disallow
 
 
-def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5):
+def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5, max_docs=20):
     ctx = ssl.create_default_context()
     if insecure:  # servidores viejos: TLS 1.0, certs vencidos o autofirmados
         ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
@@ -228,6 +247,14 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
             time.sleep(delay)
     except KeyboardInterrupt:
         print("Interrumpido: se guarda lo recorrido hasta ahora")
+    opener = build_opener(HTTPSHandler(context=ctx), _Scope(allowed))
+    for d in sorted(docs)[:max_docs]:  # ponytail: solo los primeros max_docs; subir si hace falta
+        try:
+            raw = opener.open(Request(d, headers={"User-Agent": "ReVital-crawler/0.1"}), timeout=timeout).read(3_000_000)
+        except Exception:
+            continue
+        for prod, ver in meta_documento(raw, d):
+            tech.setdefault((prod, ver, "metadato de documento"), d)
     inv = inventory.nuevo("web", start, entidad)
     inv["components"] = [inventory.componente(p, v, f, d) for (p, v, f), d in sorted(tech.items())]
     inv["extra"]["pages"] = pages
@@ -271,6 +298,10 @@ def demo():  # python -m revital.crawler --demo : verifica el parser sin red
     assert ("Apache Tomcat", "5.5.23", "pagina de error") in err, err
     assert decode("Educación".encode("latin-1")) == "Educación" and decode("Educación".encode("utf-8")) == "Educación"
     assert decode('<meta charset="iso-8859-1">Niño'.encode("latin-1")).endswith("Niño")
+    assert meta_documento(b"%PDF-1.4 /Producer (Acrobat Distiller 8.0.0)", "a.pdf") == [("Acrobat Distiller", "8.0.0")]
+    z = io.BytesIO()
+    zipfile.ZipFile(z, "w").writestr("docProps/app.xml", "<Application>Microsoft Office Word</Application><AppVersion>12.0000</AppVersion>")
+    assert meta_documento(z.getvalue(), "a.docx") == [("Microsoft Office Word", "12.0000")]
     assert normalize("HTTP://H/a;jsessionid=AB12?x=1&PHPSESSID=z#f") == "http://h/a?x=1"
     print("ok")
 
