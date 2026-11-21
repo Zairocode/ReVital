@@ -85,9 +85,11 @@ assert pedir("POST", "/analizar", "tipo=codigo&destino=C%3A%5Cno%5Cexiste&entida
 casa = pedir("GET", "/")[2]
 assert casa.count(b"<script") == casa.count(b'<script src="/static/') == 2, "solo scripts locales"
 assert b"http://" not in casa.split(b"<body>")[0] and b"https://" not in casa.split(b"<body>")[0], "nada se carga de internet"
-assert b"Revitaliza tu Sistema" in casa and b'name="autorizo" value="1"' in casa and b"Tengo autorizaci" not in casa
+assert b'Re<em class="v">Vital</em>iza</span>' in casa and b"tu sistema</span>" in casa and b'id="analizar"' in casa and b'name="autorizo" value="1"' in casa and b"Tengo autorizaci" not in casa
 st, h, b = pedir("GET", "/static/gsap.min.js"); assert st == 200 and "javascript" in h["Content-Type"] and b"GSAP" in b[:200]
-assert pedir("GET", "/static/instrument-sans-latin-400-normal.woff2")[0] == 200
+for fuente in ("instrument-sans-latin-400-normal.woff2", "instrument-sans-latin-600-normal.woff2"):
+    assert pedir("GET", "/static/" + fuente)[0] == 200, fuente
+assert casa.count(b'class="cubo cc') == 13, "pantalla de carga con cubos"
 for malo in ("/static/..%2fapp.py", "/static/app.py", "/static/%2e%2e%2f%2e%2e%2fREADME.md", "/static/x.exe"):
     assert pedir("GET", malo)[0] == 404, malo
 st, _, b = pedir("GET", "/api/estado"); assert st == 200 and "v" in json.loads(b)
