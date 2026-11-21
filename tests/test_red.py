@@ -40,6 +40,16 @@ def http(c):
     c.sendall(b"HTTP/1.1 200 OK\r\nServer: Apache/2.2.15 (CentOS) PHP/5.3.3\r\nContent-Length: 0\r\n\r\n")
 
 
+def proxy(c):
+    """Como el demo: la pagina normal trae el Server del backend; una URL mal formada la contesta el proxy con su version."""
+    c.settimeout(2)
+    pedido = c.recv(1024)
+    if b" /%zz " in pedido:
+        c.sendall(b"HTTP/1.1 400 Bad Request\r\nServer: Apache/2.4.49 (Unix)\r\nContent-Length: 0\r\n\r\n")
+    else:
+        c.sendall(b"HTTP/1.1 200 OK\r\nServer: Apache/2.4.10 (Debian)\r\nX-Powered-By: PHP/7.0.28\r\nContent-Length: 0\r\n\r\n")
+
+
 def mudo(c):
     c.settimeout(2)
     try:
@@ -70,6 +80,22 @@ for clave in ("Telnet (sin cifrar)", "FTP (sin cifrar)", "base de datos MySQL"):
     assert clave in al and "Servicio inseguro expuesto" in al, (clave, al)
 assert "SSH" not in al and "HTTP" not in al, "SSH y HTTP no son una alerta por si solos"
 assert "## Servicios expuestos" in red.to_markdown(inv)
+
+# proxy delante de un backend: se ven los dos, y el del proxy dice de donde salio
+_, pp = servidor(proxy)
+eq = red.escanear(["127.0.0.1"], [pp], timeout=1.0, espera=0.4, hilos=1)
+pr = eq[0]["puertos"][0]
+assert pr["servicio"] == "HTTP" and ("Apache", "2.4.10") in pr["productos"] and pr.get("frente") == [("Apache", "2.4.49")], pr
+ci = red.a_inventario(eq, "127.0.0.1", "MUNI-GT")["components"]
+fr = [c for c in ci if c["version"] == "2.4.49"]
+assert len(fr) == 1 and "error 400" in fr[0]["fuente"] and any(c["version"] == "2.4.10" for c in ci), ci
+# si el error 400 trae la misma version que la pagina normal, no se duplica
+assert "frente" not in por_serv["HTTP"] or not por_serv["HTTP"]["frente"], por_serv["HTTP"]
+sal_p = tempfile.mkdtemp()
+inventory.guardar(red.a_inventario(eq, "127.0.0.1", "MUNI-GT"), sal_p)
+r = subprocess.run([sys.executable, "-m", "revital.cves", "--out", sal_p, "--entidad", "MUNI-GT"], cwd=RAIZ, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+hp = json.load(open(os.path.join(sal_p, "hallazgos-muni-gt.json"), encoding="utf-8"))
+assert any(x["cve"] == "CVE-2021-41773" and x["en_kev"] for x in hp["hallazgos"]), [x["cve"] for x in hp["hallazgos"]][:20]
 
 # cruce con KEV (revital.cves): ProFTPD 1.3.5 -> CVE-2015-3306, Exim 4.69 -> CVE-2010-4344, Apache 2.2.15, y las alertas traen que hacer
 salida = tempfile.mkdtemp()
