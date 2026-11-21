@@ -14,16 +14,18 @@
 
 No toca, no reescribe y no reemplaza el sistema viejo: solo lo **mira** y lo **explica**.
 
-### Estado actual (21-nov, mañana)
+### Estado actual (21-nov)
 
 | Pieza | Rama | Archivo | Estado |
 |---|---|---|---|
 | Contrato común | `main` | `revital/inventory.py` | ✅ listo |
 | Colector web | `crawler` | `revital/crawler.py` + `tests/test_crawler_local.py` | ✅ funcionando, con pruebas que pasan |
 | Colector de red | `crawler` | `revital/red.py` | ⏳ por hacer |
-| Colector de código/carpeta | `directorios` | `revital/codigo.py` | ⏳ por hacer |
+| Colector de código/carpeta | `directorios` | `revital/codigo.py` + `tests/test_codigo.py` | ✅ funcionando, probado con el código real de Drupal 7.57 |
 | Colector de host Windows | `adaptaciones-windows` | `revital/host.py`, `scripts/` | ⏳ por hacer |
-| Evaluación KEV/NVD + reporte final | `reglas-cisa-cves` | `revital/cves/` | ⏳ por hacer |
+| Catálogos KEV/NVD congelados (offline) | `main` | `catalogos/`, `scripts/actualizar_catalogos.py`, `tests/test_catalogos.py` | ✅ listo |
+| Objetivo de demo (Drupal 7.57 + Apache 2.4.49) | `main` | `casos/portal-muni-gt/` | ✅ levanta con Docker; `instalar_drupal.sh` + `verificar.sh` |
+| Evaluación KEV/NVD + reporte final | `reglas-cisa-cves` | `revital/cves/` | ⏳ por hacer (los catálogos ya están listos para consumirse) |
 
 ---
 
@@ -115,7 +117,7 @@ Versión texto (por si el visor no muestra Mermaid):
 
 ### Restricciones de diseño (no se negocian)
 1. **Solo biblioteca estándar de Python 3.8+.** Nada de `pip install`. Razón: tiene que correr en el equipo viejo del cliente (Windows 7 incluido) donde no podemos instalar nada. Ojo: **3.8 es la última versión de Python que instala en Windows 7**, así que el código no puede usar nada más nuevo que 3.8 (ej. nada de `match`, ni `str.removeprefix` de 3.9).
-2. **Offline.** Los catálogos KEV y NVD se descargan antes y viajan con la herramienta. En la demo no dependemos del Wi-Fi.
+2. **Offline.** Los catálogos KEV y NVD ya están congelados en `catalogos/` (ver `catalogos/LEEME.md`); se refrescan con `python scripts/actualizar_catalogos.py` (~15 s, con internet). En la demo no dependemos del Wi-Fi.
 3. **Solo lectura.** Ningún colector modifica el sistema analizado.
 4. **Solo contra sistemas propios o con autorización.** Esto se dice también en el pitch.
 5. Linux viejo: fuera de alcance por ahora.
@@ -190,20 +192,24 @@ Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid
 
 **Probado contra el caso real (`casos/portal-muni-gt`, Docker):** detecta Drupal 7.57 (`/CHANGELOG.txt`), Apache 2.4.49 (proxy, error 400), Apache 2.4.10 y PHP 7.0.28 (backend) y las 36 rutas de `robots.txt`.
 
-**Pendiente del colector:** cascada de versiones TLS (con `adaptaciones-windows`), login y JavaScript.
+**TLS viejo:** con `--insecure` el crawler baja hasta TLS 1.0 (Python moderno exige 1.2 por defecto) y, en cada `https`, prueba TLS 1.3/1.2/1.1/1.0 por separado. Si el servidor acepta 1.0 o 1.1 queda como componente `TLS` (protocolo obsoleto) y en una sección del reporte. Probado con servidores locales de prueba en Python 3.8 + OpenSSL 1.1.1; **no** probado en un Windows 7 real.
+
+**Pendiente del colector:** login y JavaScript.
 
 > **Nombres de producto:** el crawler emite los nombres tal como los ve (`Apache`, `Drupal`, `PHP`, `Microsoft-IIS`). El cruce con NVD/CPE (`apache http_server`, `drupal`, `php`) necesita la **tabla de alias** de §7.5; hay que acordarla entre `crawler` y `reglas-cisa-cves`.
 
 ### 7.2 Colector de red — rama `crawler` (`revital/red.py`) — ⏳ por hacer
 Recorrerá un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
 
-### 7.3 Colector de código/carpeta — rama `directorios` (`revital/codigo.py`) — ⏳ por hacer
-Se apuntará a la carpeta de una app legacy y lee archivos que declaran versiones:
-- `web.config` (versión de .NET Framework), DLLs y sus versiones;
-- `pom.xml` (dependencias Java: aquí aparecería, por ejemplo, un Log4j viejo);
-- `composer.json` (PHP), `package.json` (JS), etc.
+### 7.3 Colector de código/carpeta — rama `directorios` (`revital/codigo.py`) — ✅ funcionando
+`python -m revital.codigo RUTA_APP --entidad X` recorre la carpeta de una app legacy y lee los archivos que **declaran** versiones (solo lectura, ignora `node_modules`):
+- `web.config` (versión de .NET Framework y assemblies; alerta si hay `debug=true` o `customErrors Off`), DLL (`FileVersion`) y JAR (por nombre);
+- `pom.xml` (dependencias Java con sus propiedades: aquí aparece, por ejemplo, un Log4j viejo);
+- `composer.json`/`composer.lock` (PHP), `package.json`/`package-lock.json` (JS), `requirements.txt` (Python) y `packages.config` (NuGet);
+- librerías JS por nombre o por cabecera (jQuery núcleo y jQuery UI; los plugins no se confunden con el núcleo);
+- `includes/bootstrap.inc` (versión de Drupal) y `wp-includes/version.php` (WordPress).
 
-Produce `inventario-codigo.json`. Es el colector con la evidencia más precisa porque lee versiones declaradas, no adivinadas.
+Produce `inventario-codigo-<destino>.json` y `reporte-<entidad>-codigo-<destino>.md`. Es el colector con la evidencia más precisa porque lee versiones declaradas, no adivinadas. Contra el código real del caso `portal-muni-gt` da Drupal 7.57, jQuery 1.4.4 y jQuery UI 1.8.7.
 
 ### 7.4 Colector de host — rama `adaptaciones-windows` (`revital/host.py`, `scripts/`) — ⏳ por hacer
 Correrá en el propio equipo/servidor Windows viejo: software instalado, versión de Windows/IIS, etc. Incluye un `.bat` para lanzarlo fácil y las adaptaciones para TLS y Python viejos. Produce `inventario-host.json`.
