@@ -43,6 +43,13 @@ assert len(datos.historial(salida, "muni-gt")) == 2 and datos.historial(salida, 
 # sin cambios no hay ruido ni se vuelve a llamar al comando
 os.remove(marca)
 assert sentinela.registrar(cfg, salida, "MUNI-GT") == [] and not os.path.exists(marca)
+# si el objetivo deja de responder (0 componentes) es una alerta, no "paso a cumplir"
+vacio = {"entidad": "X", "componentes": {}, "kev": {}, "no_kev": 0, "cumple": False}
+antes = {"entidad": "X", "componentes": {"Drupal": ["7.57"]}, "kev": {}, "no_kev": 0, "cumple": True}
+tipos_vacio = {(e["tipo"], e["severidad"]) for e in sentinela.comparar(antes, vacio)}
+assert ("sin_datos", "alta") in tipos_vacio and not [t for t, _ in tipos_vacio if t == "cumplimiento"], tipos_vacio
+assert sentinela.foto({"entidad": "X", "componentes": [], "hallazgos": []})["cumple"] is False
+
 # el ciclo completo (vigilar) crea la carpeta y deja el estado para el panel, aunque no haya objetivos
 nueva = os.path.join(tempfile.mkdtemp(), "no", "existe")
 sentinela.vigilar({"salida": nueva, "objetivos": []}, una_vez=True)

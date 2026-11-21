@@ -42,7 +42,7 @@ def foto(hallazgos):
             kev["%s | %s %s" % (h["cve"], h["producto"], h["version"])] = h.get("nivel_txt", "")
     return {"entidad": hallazgos.get("entidad", ""), "componentes": {k: sorted(v) for k, v in comps.items()},
             "kev": kev, "no_kev": sum(1 for h in hallazgos.get("hallazgos", []) if not h.get("en_kev")),
-            "cumple": not kev}
+            "cumple": not kev and bool(comps)}
 
 
 def comparar(prev, nuevo):
@@ -67,6 +67,9 @@ def comparar(prev, nuevo):
             add("kev_nueva", "critica" if niv == "CRITICO" else "alta", "Vulnerabilidad explotada nueva: %s [%s]" % (k, niv))
     for k in sorted(set(prev["kev"]) - set(nuevo["kev"])):
         add("kev_resuelta", "info", "Ya no aplica: %s" % k)
+    if prev["componentes"] and not nuevo["componentes"]:
+        add("sin_datos", "alta", "El analisis ya no encuentra ningun componente: el objetivo dejo de responder o no se pudo leer")
+        return ev
     if prev.get("cumple") and not nuevo["cumple"]:
         add("cumplimiento", "alta", "Paso de CUMPLE a NO CUMPLE (%d KEV abiertas)" % len(nuevo["kev"]))
     elif not prev.get("cumple") and nuevo["cumple"]:

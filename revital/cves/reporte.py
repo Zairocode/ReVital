@@ -77,7 +77,10 @@ def markdown(entidad, inventarios, res, info, hoy, reglas):
           "| Dependen de configuracion (verificar) | %d |" % len(cond),
           "| Componentes fuera de soporte del fabricante | %d |" % len(res["eol"]),
           "| Configuraciones inseguras (protocolos, web.config...) | %d |" % len(res.get("configuracion", [])), ""]
-    if kev:
+    if not res["componentes"]:
+        L += ["**Cumplimiento: SIN DATOS.** No se detecto ningun componente: el objetivo no respondio o no se pudo leer. "
+              "Esto NO significa que este libre de vulnerabilidades; revisa el error del colector y vuelve a analizar.", ""]
+    elif kev:
         L += ["**Cumplimiento: NO CUMPLE.** Hay %d vulnerabilidades del catalogo KEV sin parchear. "
               "CISA exige remediarlas antes de su fecha limite." % len(kev), ""]
     else:

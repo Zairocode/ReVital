@@ -21,7 +21,8 @@ def resumen(h):
     return {"kev": len(kev), "ransomware": sum(1 for x in kev if x.get("nivel") == 1),
             "vencidas": sum(1 for x in kev if x.get("vencido")), "otras": len(hall) - len(kev),
             "condicionales": len(h.get("condicionales", [])), "componentes": len(h.get("componentes", [])),
-            "eol": len(h.get("eol", [])), "cumple": not kev}
+            "eol": len(h.get("eol", [])), "cumple": not kev and bool(h.get("componentes")),
+            "sin_datos": not h.get("componentes")}
 
 
 def entidades(salida):
