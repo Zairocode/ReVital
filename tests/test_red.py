@@ -87,6 +87,7 @@ def correr(*a):
     return subprocess.run([sys.executable, "-m", "revital.red"] + list(a), cwd=RAIZ, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
 r = correr("127.0.0.1"); assert r.returncode != 0 and "--autorizo" in r.stdout and "ningun paquete" in r.stdout, r.stdout
 r = correr("8.8.8.0/24", "--autorizo"); assert r.returncode != 0 and "No se escaneo nada" in r.stdout and "privada" in r.stdout, r.stdout
+r = correr("100.128.0.0/30", "--autorizo"); assert r.returncode != 0 and "privada" in r.stdout, r.stdout  # justo fuera del rango Tailscale/CGNAT
 r = correr("10.0.0.0/8", "--autorizo"); assert r.returncode != 0 and "maximo" in r.stdout, r.stdout
 out = tempfile.mkdtemp()
 r = correr("127.0.0.1", "--puertos", str(svs["ssh"][1]), "--entidad", "X", "--out", out, "--autorizo"); assert r.returncode == 0, r.stdout

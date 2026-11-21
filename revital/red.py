@@ -7,7 +7,8 @@ privilegios: solo conecta y lee. Solo stdlib (Python 3.8+). Produce inventario-r
   python -m revital.red 192.168.1.0/24 --entidad MUNI-GT --autorizo
   python -m revital.red 127.0.0.1 --puertos 21,22,80,3306 --autorizo
 
-Reglas de seguridad: exige --autorizo; por defecto solo redes privadas/locales (--permitir-publico para otras);
+Reglas de seguridad: exige --autorizo; por defecto solo redes privadas/locales y Tailscale/CGNAT 100.64.0.0/10
+(--permitir-publico para otras);
 maximo 256 equipos (--max-hosts); conexiones con tiempo corto y pocas en paralelo para no saturar equipos viejos.
 Solo en redes propias o con autorizacion por escrito.
 """
@@ -29,6 +30,15 @@ SENSIBLES = {"Telnet": "Telnet (sin cifrar)", "FTP": "FTP (sin cifrar)", "MySQL"
 
 
 # ------------------------------------------------------------------ objetivos
+# 100.64.0.0/10 (RFC 6598, "shared address space"): lo usan Tailscale y el CGNAT de los proveedores. No es Internet publico,
+# pero ipaddress no lo marca como is_private; se acepta igual que una red privada.
+CGNAT = ipaddress.ip_network("100.64.0.0/10")
+
+
+def es_interna(red):
+    return red.is_private or red.is_loopback or red.is_link_local or (red.version == 4 and red.subnet_of(CGNAT))
+
+
 def resolver_objetivo(texto, max_hosts=256, permitir_publico=False):
     """'192.168.1.0/24, 10.0.0.5, servidor.local' -> lista de IPv4 (str). Lanza ValueError con un mensaje claro si no es seguro/valido."""
     ips = []
@@ -42,7 +52,7 @@ def resolver_objetivo(texto, max_hosts=256, permitir_publico=False):
                 raise ValueError("No entiendo '%s': usa una IP, un rango como 192.168.1.0/24 o el nombre de un equipo." % parte)
         if red.version != 4:
             raise ValueError("Solo IPv4 por ahora: %s" % parte)
-        if not permitir_publico and not (red.is_private or red.is_loopback or red.is_link_local):
+        if not permitir_publico and not es_interna(red):
             raise ValueError("%s no es una red privada. Escanear redes publicas requiere --permitir-publico y autorizacion escrita." % parte)
         if red.num_addresses > max_hosts + 2:
             raise ValueError("%s tiene %d direcciones; el maximo es %d (--max-hosts). Escanea por partes." % (parte, red.num_addresses, max_hosts))
@@ -225,6 +235,14 @@ def demo():
             assert causa in str(e), (malo, str(e))
     assert resolver_objetivo("192.168.1.0/30") == ["192.168.1.1", "192.168.1.2"] and resolver_objetivo("127.0.0.1") == ["127.0.0.1"]
     assert resolver_objetivo("8.8.8.8", permitir_publico=True) == ["8.8.8.8"]
+    # Tailscale / CGNAT (100.64.0.0/10, RFC 6598): redes internas que Python no marca como privadas
+    assert resolver_objetivo("100.91.166.18") == ["100.91.166.18"] and resolver_objetivo("100.64.0.0/30") == ["100.64.0.1", "100.64.0.2"]
+    for fuera in ("100.63.255.255", "100.128.0.1"):
+        try:
+            resolver_objetivo(fuera)
+            raise AssertionError("debia rechazarse: " + fuera)
+        except ValueError as e:
+            assert "privada" in str(e), (fuera, str(e))
     print("ok")
 
 
