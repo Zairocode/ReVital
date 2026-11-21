@@ -1,13 +1,14 @@
 """Colector web de ReVital: documenta una app web legacy -> inventario-web.json + reporte .md.
 
 Solo stdlib, compatible con Python 3.8+ (Windows 7 en adelante).
-Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--out salida]
+Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--scope host2,host3] [--out salida]
 Solo contra sistemas propios o con autorizacion.
 """
-import argparse, json, os, re, ssl, sys, time
+import argparse, os, re, ssl, sys, time
+from collections import Counter, deque
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse, urldefrag
-from urllib.request import Request, urlopen
+from urllib.parse import urljoin, urlparse, urldefrag, urlunparse
+from urllib.request import Request, build_opener, HTTPRedirectHandler, HTTPSHandler
 from urllib.error import HTTPError
 
 from revital import inventory
@@ -17,12 +18,23 @@ LIB_RE = re.compile(r"([a-z][a-z0-9.]*?)[-.@/]v?(\d+\.\d+(?:\.\d+)*)", re.I)
 TECH_HEADERS = ("server", "x-powered-by", "x-aspnet-version", "x-aspnetmvc-version")
 EXT_HINTS = {".aspx": "ASP.NET WebForms", ".asp": "ASP Clasico", ".jsp": "Java JSP",
              ".php": "PHP", ".cfm": "ColdFusion", ".do": "Java Struts", ".action": "Java Struts"}
+# la cookie de sesion delata la plataforma aunque no haya extension
+COOKIE_HINTS = (("aspsessionid", "ASP Clasico"), ("asp.net_sessionid", "ASP.NET"), ("jsessionid", "Java servlet"),
+                ("phpsessid", "PHP"), ("cfid", "ColdFusion"), ("cftoken", "ColdFusion"))
+PATH_HINTS = (("/webresource.axd", "ASP.NET WebForms"), ("/scriptresource.axd", "ASP.NET WebForms"),
+              ("/struts/", "Apache Struts"), ("/wp-content/", "WordPress"), ("/wp-includes/", "WordPress"),
+              ("/sites/default/", "Drupal"), ("/media/jui/", "Joomla"), ("/_layouts/", "SharePoint"))
+# paginas de error y comentarios suelen exponer "Apache Tomcat/6.0.18", "Microsoft-IIS/6.0", etc.
+SERVER_RE = re.compile(r"(Apache Tomcat|Apache|Microsoft-IIS|nginx|Jetty|JBoss|WebLogic|WebSphere|PHP|OpenSSL)[/ ]+(\d[\w.]*)", re.I)
+DOC_EXT = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".rtf", ".zip", ".rar"}
+SKIP_EXT = {".jpg", ".jpeg", ".png", ".gif", ".ico", ".css", ".js", ".svg", ".mp3", ".mp4", ".avi", ".woff", ".ttf"}
+SESSION_PARAMS = {"jsessionid", "phpsessid", "sid", "aspsessionid", "sessionid"}
 
 
 class Page(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.title, self.links, self.scripts, self.forms, self.meta = "", [], [], [], {}
+        self.title, self.links, self.scripts, self.forms, self.meta, self.comments = "", [], [], [], {}, []
         self._in_title = False
 
     def handle_starttag(self, tag, a):
@@ -44,21 +56,53 @@ class Page(HTMLParser):
         if tag == "title":
             self._in_title = False
 
+    def handle_comment(self, d):
+        self.comments.append(d)
+
     def handle_data(self, d):
         if self._in_title:
             self.title += d.strip()
 
 
-def fetch(url, ctx):
+class _Scope(HTTPRedirectHandler):
+    """No sigue redirects a hosts fuera de scope (ni siquiera los contacta)."""
+    def __init__(self, allowed):
+        self.allowed = allowed
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if urlparse(newurl).netloc.lower() not in self.allowed:
+            return None
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(url, ctx, allowed, timeout=15, retries=2):
+    """-> (status, headers, body, url_final). Reintenta fallos de red; los HTTP 4xx/5xx se devuelven tal cual."""
     req = Request(url, headers={"User-Agent": "ReVital-crawler/0.1"})
-    try:
-        r = urlopen(req, timeout=15, context=ctx)
-    except HTTPError as e:
-        r = e
-    ctype = r.headers.get("Content-Type", "")
-    ok = "html" in ctype or ctype.split(";")[0] in ("", "application/octet-stream")  # legacy mal configurado
-    body = r.read(2_000_000).decode("latin-1") if ok else ""  # latin-1 no falla nunca
-    return r.getcode(), dict(r.headers), body
+    opener = build_opener(HTTPSHandler(context=ctx), _Scope(allowed))
+    for i in range(retries + 1):
+        try:
+            try:
+                r = opener.open(req, timeout=timeout)
+            except HTTPError as e:
+                r = e
+            ctype = r.headers.get("Content-Type", "")
+            ok = "html" in ctype or ctype.split(";")[0] in ("", "application/octet-stream")  # legacy mal configurado
+            body = r.read(2_000_000).decode("latin-1") if ok else ""  # latin-1 no falla nunca
+            headers = dict(r.headers.items())
+            headers["set-cookie"] = "\n".join(r.headers.get_all("Set-Cookie") or [])
+            return r.getcode(), headers, body, r.geturl()
+        except Exception:
+            if i == retries:
+                raise
+            time.sleep(1 + i)
+
+
+def normalize(url):
+    """Quita fragmento y ids de sesion en URL para no recorrer la misma pagina mil veces."""
+    u = urlparse(urldefrag(url)[0])
+    path = re.sub(r";jsessionid=[^?/]*", "", u.path, flags=re.I)
+    q = "&".join(x for x in u.query.split("&") if x and x.split("=")[0].lower() not in SESSION_PARAMS)
+    return urlunparse((u.scheme, u.netloc.lower(), path, "", q, ""))
 
 
 def split_ver(txt):
@@ -67,7 +111,7 @@ def split_ver(txt):
     return (m.group(1), m.group(2)) if m else (txt.strip(), "")
 
 
-def detect_tech(url, headers, page):
+def detect_tech(url, headers, page, status=200, body=""):
     """Devuelve set de (producto, version, fuente)."""
     tech = set()
     low = {k.lower(): v for k, v in headers.items()}
@@ -83,10 +127,18 @@ def detect_tech(url, headers, page):
     ext = os.path.splitext(urlparse(url).path)[1].lower()
     if ext in EXT_HINTS:
         tech.add((EXT_HINTS[ext], "", "extension " + ext))
+    for c in low.get("set-cookie", "").split("\n"):
+        name = c.split("=")[0].strip().lower()
+        tech.update((prod, "", "cookie " + hint) for hint, prod in COOKIE_HINTS if name.startswith(hint))
+    for ref in page.links + page.scripts:
+        tech.update((prod, "", "ruta " + hint) for hint, prod in PATH_HINTS if hint in ref.lower())
+    textos = [(c, "comentario html") for c in page.comments] + ([(body, "pagina de error")] if status >= 400 else [])
+    for texto, fuente in textos:
+        tech.update((m.group(1), m.group(2), fuente) for m in SERVER_RE.finditer(texto))
     return tech
 
 
-def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad=""):
+def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5):
     ctx = ssl.create_default_context()
     if insecure:  # servidores viejos: TLS 1.0, certs vencidos o autofirmados
         ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
@@ -94,41 +146,62 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad=""):
             ctx.set_ciphers("ALL:@SECLEVEL=0")
         except ssl.SSLError:
             pass
-    host, seen, queue, pages, tech = urlparse(start).netloc, set(), [start], [], {}
-    while queue and len(pages) < max_pages:
-        url = queue.pop(0)
-        if url in seen:
-            continue
-        seen.add(url)
-        try:
-            status, headers, body = fetch(url, ctx)
-        except Exception as e:  # ponytail: un error por pagina no tumba el crawl; se reporta
-            pages.append({"url": url, "error": str(e)})
-            continue
-        p = Page()
-        p.feed(body)
-        t = detect_tech(url, headers, p)
-        for k in t:
-            tech.setdefault(k, url)  # donde = primera pagina donde aparecio
-        pages.append({"url": url, "status": status, "title": p.title, "forms": p.forms,
-                      "scripts": p.scripts})
-        for l in p.links:
-            l = urldefrag(urljoin(url, l))[0]
-            if urlparse(l).netloc == host and l.startswith("http") and l not in seen:
-                queue.append(l)
-        time.sleep(delay)
+    start = normalize(start)
+    allowed = {urlparse(start).netloc.lower()} | {h.lower() for h in scope}
+    print("Recorriendo %s | hosts permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
+    seen, queue, pages, tech, docs, patrones = set(), deque([start]), [], {}, set(), Counter()
+    try:
+        while queue and len(pages) < max_pages:
+            url = queue.popleft()
+            if url in seen:
+                continue
+            seen.add(url)
+            try:
+                status, headers, body, final = fetch(url, ctx, allowed, timeout)
+            except Exception as e:  # ponytail: un error por pagina no tumba el crawl; se reporta
+                pages.append({"url": url, "error": str(e)})
+                continue
+            loc = urljoin(url, headers.get("Location", "")) if 300 <= status < 400 else final
+            if urlparse(loc).netloc.lower() not in allowed:
+                pages.append({"url": url, "error": "fuera de scope: redirige a " + loc})
+                continue
+            p = Page()
+            p.feed(body)
+            for k in detect_tech(url, headers, p, status, body):
+                tech.setdefault(k, url)  # donde = primera pagina donde aparecio
+            pages.append({"url": url, "status": status, "title": p.title, "forms": p.forms, "scripts": p.scripts})
+            for l in p.links:
+                l = normalize(urljoin(url, l))
+                u = urlparse(l)
+                ext = os.path.splitext(u.path)[1].lower()
+                if not l.startswith("http") or u.netloc not in allowed or l in seen or ext in SKIP_EXT:
+                    continue
+                if ext in DOC_EXT:
+                    docs.add(l)
+                    continue
+                # tope por patron: /ver?id=1..99999 o calendarios infinitos no se recorren enteros
+                key = (u.netloc, u.path, tuple(sorted(x.split("=")[0] for x in u.query.split("&") if x)))
+                patrones[key] += 1
+                if patrones[key] <= per_pattern:
+                    queue.append(l)
+            time.sleep(delay)
+    except KeyboardInterrupt:
+        print("Interrumpido: se guarda lo recorrido hasta ahora")
     inv = inventory.nuevo("web", start, entidad)
     inv["components"] = [inventory.componente(p, v, f, d) for (p, v, f), d in sorted(tech.items())]
     inv["extra"]["pages"] = pages
+    inv["extra"]["documentos"] = sorted(docs)
+    inv["extra"]["hosts_permitidos"] = sorted(allowed)
     return inv
 
 
 def to_markdown(r):
-    pages = r["extra"]["pages"]
+    pages, docs = r["extra"]["pages"], r["extra"]["documentos"]
     out = ["# Reporte ReVital (web): %s" % r["target"], "", "Entidad: %s" % (r["entidad"] or "-"),
            "Generado: %s" % r["generado"], "Paginas: %d" % len(pages), "", "## Componentes", "",
            "| Producto | Version | Fuente | Donde |", "|---|---|---|---|"]
     out += ["| %(producto)s | %(version)s | %(fuente)s | %(donde)s |" % c for c in r["components"]]
+    out += ["", "## Documentos enlazados (%d)" % len(docs), ""] + ["- " + d for d in docs]
     out += ["", "## Paginas", ""]
     for p in pages:
         out.append("- `%s` -> %s %s" % (p["url"], p.get("status", "ERROR"), p.get("title") or p.get("error", "")))
@@ -137,14 +210,20 @@ def to_markdown(r):
     return "\n".join(out) + "\n"
 
 
-def demo():  # python crawler.py --demo : verifica el parser sin red
+def demo():  # python -m revital.crawler --demo : verifica el parser sin red
     p = Page()
-    p.feed('<title>X</title><script src="/js/jquery-1.4.2.min.js"></script>'
-           '<meta name="generator" content="Joomla 1.5"><form action="/a" method="POST"><input name="u"></form>')
-    t = detect_tech("http://h/login.aspx", {"Server": "Microsoft-IIS/6.0"}, p)
+    p.feed('<title>X</title><script src="/js/jquery-1.4.2.min.js"></script><!-- Apache Tomcat/6.0.18 -->'
+           '<meta name="generator" content="Joomla 1.5"><a href="/WebResource.axd?d=1">r</a>'
+           '<form action="/a" method="POST"><input name="u"></form>')
+    t = detect_tech("http://h/login.aspx", {"Server": "Microsoft-IIS/6.0", "Set-Cookie": "ASPSESSIONIDQQ=x; path=/"}, p)
     assert p.title == "X" and p.forms[0]["inputs"] == ["u"], p.forms
     assert {("jquery", "1.4.2", "script"), ("Microsoft-IIS", "6.0", "header server"),
-            ("ASP.NET WebForms", "", "extension .aspx"), ("Joomla", "1.5", "meta generator")} <= t, t
+            ("ASP.NET WebForms", "", "extension .aspx"), ("Joomla", "1.5", "meta generator"),
+            ("Apache Tomcat", "6.0.18", "comentario html"), ("ASP Clasico", "", "cookie aspsessionid"),
+            ("ASP.NET WebForms", "", "ruta /webresource.axd")} <= t, t
+    err = detect_tech("http://h/x", {}, Page(), 404, "<h3>Apache Tomcat/5.5.23</h3>")
+    assert ("Apache Tomcat", "5.5.23", "pagina de error") in err, err
+    assert normalize("HTTP://H/a;jsessionid=AB12?x=1&PHPSESSID=z#f") == "http://h/a?x=1"
     print("ok")
 
 
@@ -156,13 +235,15 @@ if __name__ == "__main__":
     ap.add_argument("--insecure", action="store_true")
     ap.add_argument("--out", default="salida")
     ap.add_argument("--entidad", default="")
+    ap.add_argument("--scope", default="", help="hosts extra permitidos, separados por coma (ej: portal.gob,api.gob)")
+    ap.add_argument("--timeout", type=int, default=15)
     ap.add_argument("--demo", action="store_true")
     a = ap.parse_args()
     if a.demo:
         demo(); sys.exit()
     if not a.url:
         ap.error("falta url")
-    res = crawl(a.url, a.max, a.delay, a.insecure, a.entidad)
+    res = crawl(a.url, a.max, a.delay, a.insecure, a.entidad, [h for h in a.scope.split(",") if h], a.timeout)
     j = inventory.guardar(res, a.out)
     md = os.path.join(a.out, "reporte-%s-web.md" % (a.entidad or "sin-entidad"))
     with open(md, "w", encoding="utf-8") as f:
