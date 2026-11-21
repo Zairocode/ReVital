@@ -1,0 +1,9 @@
+{
+  "cada_minutos": 60,
+  "salida": "salida",
+  "objetivos": [
+    {"entidad": "MUNI-GT", "tipo": "web", "destino": "http://localhost:8080", "insecure": false},
+    {"entidad": "MUNI-GT", "tipo": "codigo", "destino": "C:\inetpub\portal"}
+  ],
+  "al_detectar_cambio": ""
+}

@@ -24,6 +24,13 @@ Solo stdlib de Python 3.8+ (corre en Windows 7). Linux viejo: fuera de scope por
 `{kind, target, entidad, generado, components:[{producto, version, fuente, donde}], extra:{}}`
 Los colectores solo llenan `components` (y lo que quieran en `extra`). Nadie lee el JSON de otro más allá de esto.
 
+## Panel y sentinela (entrar, ver, descargar y vigilar)
+```
+python -m revital.panel --abrir                          # panel en http://127.0.0.1:8765 (solo este equipo)
+python -m revital.sentinela --config sentinela.json      # vigila en bucle y avisa de cambios
+```
+- **Panel:** resumen por entidad (cumple / no cumple, qué parchear primero), hallazgos con evidencia, inventario, documentación para ver o descargar (`.zip`) y lanzar análisis desde la pantalla. Sin JavaScript, sin internet y sin librerías: corre en equipos viejos (Python 3.8). Solo escucha en `127.0.0.1`.
+- **Sentinela:** vuelve a analizar cada `cada_minutos`, compara con la vez anterior y avisa si aparece un componente nuevo, cambia una versión, se abre una KEV o un objetivo deja de responder. Los avisos se ven en el panel y puede ejecutar un comando propio (`al_detectar_cambio`). Ejemplo: `revital/sentinela.ejemplo.json`.
 ## Ramas (cada una toca su carpeta)
 | Rama | Carpeta | Qué |
 |---|---|---|
