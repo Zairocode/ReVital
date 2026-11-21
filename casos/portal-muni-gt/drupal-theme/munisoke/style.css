@@ -1,0 +1,10 @@
+/* Paginas internas de Drupal (login, registro, admin...) con los colores de la portada MuniSoke GT.
+   La portada "/" usa su propia plantilla (page--front.tpl.php) y no pasa por este CSS. */
+#header { background: linear-gradient(180deg, #0a2a66 0%, #1452c9 100%); }
+#site-name a, #site-name a:hover, #site-slogan { color: #fff; }
+#main-menu .menu a, #main-menu a { color: #0a2a66; }
+a { color: #1452c9; } a:hover { color: #128a4e; }
+.block-user h2, #page-title { color: #0a2a66; }
+input.form-submit { background: #128a4e; color: #fff; border: 0; border-radius: 4px; padding: 6px 14px; }
+#logo { display: none; }
+#site-name { margin-top: 10px; }
