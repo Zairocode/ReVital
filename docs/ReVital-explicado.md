@@ -3,7 +3,7 @@
 > Documento de contexto para los 6 integrantes. Léelo completo una vez; después úsalo como referencia.
 > Resumen visual de 1 hoja: [`ReVital-resumen-1-hoja.pdf`](ReVital-resumen-1-hoja.pdf).
 > Fuente de verdad técnica: el `README.md` y `revital/inventory.py` de `main` (diseño de Zairocode) y el código de cada rama. Si este documento y el código no coinciden, manda el código y se corrige este archivo.
-> Alineado con: `main` @ `208bb33` y `crawler` @ `a173b0a` (21-nov-2026).
+> Alineado con: `main` @ `c1b013c` y `crawler` @ última versión (21-nov-2026). El colector web (§7.1) ya fue probado contra el caso `portal-muni-gt` (Docker).
 > Lo marcado como **(propuesta)** no está decidido en el README; se valida con el equipo.
 
 ---
@@ -167,7 +167,13 @@ Ya usa el contrato común: produce `salida/inventario-web.json` con `components[
 - extensión de las páginas (`.aspx`, `.asp`, `.jsp`, `.php`, `.cfm`, `.do`, `.action`);
 - cookies de sesión (`ASPSESSIONID` → ASP clásico, `JSESSIONID` → Java, `PHPSESSID` → PHP…);
 - rutas delatoras (`/WebResource.axd` → ASP.NET, `/wp-content/` → WordPress, `/_layouts/` → SharePoint…);
-- versiones filtradas en **comentarios HTML** y **páginas de error** (ej. `Apache Tomcat/5.5.23` en un 404).
+- versiones filtradas en **comentarios HTML** y **páginas de error** (ej. `Apache Tomcat/5.5.23` en un 404);
+- **todos los productos de un header** (`Apache/2.4.49 (Unix) PHP/7.4.33` → Apache **y** PHP);
+- **versión exacta del CMS** pidiendo archivos conocidos: `/CHANGELOG.txt` (Drupal), `/readme.html` (WordPress), `joomla.xml` (Joomla). Necesario porque el meta generator de Drupal 7 solo dice "Drupal 7";
+- **servidor de enfrente tras un proxy:** el header `Server` de las páginas es el del backend; el crawler provoca un error 400 (URL mal formada) que contesta el propio proxy y ahí aparece su versión real (ej. Apache 2.4.49 delante de un backend 2.4.10);
+- **metadatos de documentos:** de PDF y DOCX/XLSX/PPTX lee el software que los creó (ej. `Microsoft Office Word 12.0`), que revela versiones;
+- `robots.txt` y `sitemap.xml` como fuente de rutas (los `Disallow` suelen apuntar a `/admin`, `/backup`; se listan en el reporte);
+- **charset real** de cada página (header, `<meta>`, UTF-8 y, si no cuadra, latin-1).
 
 Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid`, `pagina de error`) y `donde` (URL).
 
@@ -180,7 +186,13 @@ Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid
 
 **En `extra`** guarda las páginas (estado, título, formularios y sus campos), los **documentos enlazados** (`.pdf`, `.doc`, `.xls`…) y los hosts permitidos: eso es la "documentación" de la app.
 
-**Pruebas:** `python -m revital.crawler --demo` (parser, sin red) y `python tests/test_crawler_local.py` (levanta un sitio legacy falso local con trampas, redirect externo y página de error).
+**Pruebas:** `python -m revital.crawler --demo` (parser, sin red) y `python tests/test_crawler_local.py` (levanta un sitio legacy falso local con trampas, redirect externo, página de error, sitemap, PDF y CHANGELOG de Drupal).
+
+**Probado contra el caso real (`casos/portal-muni-gt`, Docker):** detecta Drupal 7.57 (`/CHANGELOG.txt`), Apache 2.4.49 (proxy, error 400), Apache 2.4.10 y PHP 7.0.28 (backend) y las 36 rutas de `robots.txt`.
+
+**Pendiente del colector:** cascada de versiones TLS (con `adaptaciones-windows`), login y JavaScript.
+
+> **Nombres de producto:** el crawler emite los nombres tal como los ve (`Apache`, `Drupal`, `PHP`, `Microsoft-IIS`). El cruce con NVD/CPE (`apache http_server`, `drupal`, `php`) necesita la **tabla de alias** de §7.5; hay que acordarla entre `crawler` y `reglas-cisa-cves`.
 
 ### 7.2 Colector de red — rama `crawler` (`revital/red.py`) — ⏳ por hacer
 Recorrerá un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
