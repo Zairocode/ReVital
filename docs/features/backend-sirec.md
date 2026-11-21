@@ -1,5 +1,5 @@
 # Backend legacy de MuniSoke (SIREC) para el demo
-Estado: backend listo; falta integrar el frontend (rama feat/frontend-sirec, Antigravity)
+Estado: listo en local (backend + frontend probados juntos); sin subir
 Rama: `feat/backend-sirec`
 
 ## Objetivo
@@ -52,7 +52,7 @@ Estos servicios **sí son explotables** (por ejemplo, Struts S2-045 y ProFTPD mo
 - [x] T8 — `docker/verificar-backend.sh` (4/4 OK) y `docker/sentinela.demo.json`.
 - [x] T9 — punta a punta: red + web + código + cves en una entidad → MySQL/Redis expuestos, Exim, Struts/Log4j/Spring, Drupal/Apache; encender FTP → alerta del sentinela.
 - [x] T10 — guion del demo en `casos/portal-muni-gt/backend/README.md`.
-- [ ] T11 — integrar y revisar el frontend de Antigravity (`feat/frontend-sirec`) contra el SIREC real.
+- [x] T11 — frontend de Antigravity (`feat/frontend-sirec`) probado en el navegador contra SIREC real: IUSI (F-1024, F-2048, F-0000), órdenes de agua, multa, ornato y finca al día, LAIP + seguimiento; 0 errores en consola; portal 6/6.
 
 Orden por valor si falta tiempo: T2 → T6 → T1 → T7/T8 (ya hay alertas 1) → T4 (alertas 2 y 4) → T3 (alerta 3) → T5.
 
@@ -61,4 +61,4 @@ Orden por valor si falta tiempo: T2 → T6 → T1 → T7/T8 (ya hay alertas 1) �
 - 2026-11-21 — Datos ficticios realistas de una muni; ReVital no lee la BD.
 
 ## Siguiente paso
-Revisar el frontend de Antigravity contra el SIREC real (T11).
+Subir las dos ramas y abrir los PRs (backend y frontend).
