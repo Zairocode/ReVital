@@ -62,11 +62,35 @@ todos = {h["cve"] for h in res["hallazgos"] + res["condicionales"]}
 assert "CVE-2019-6340" not in todos                                    # solo Drupal 8
 assert {(c["producto"], c["rama"]) for c in res["eol"]} == {("Drupal", "7"), ("PHP", "7.0")}
 
+# --- parche, mitigacion y Exploit-DB ---
+hh = {x["cve"]: x for x in res["hallazgos"]}
+assert hh["CVE-2018-7600"]["parche"].startswith("Actualizar Drupal a una version posterior a 7.57")
+assert "no tiene soporte" in hh["CVE-2018-7600"]["parche"]                            # Drupal 7 es EOL
+assert hh["CVE-2021-41773"]["parche"] == "Actualizar Apache HTTP Server a una version posterior a 2.4.49."
+assert hh["CVE-2021-42013"]["parche"] == "Actualizar Apache HTTP Server a una version posterior a 2.4.50."
+assert "Require all denied" in hh["CVE-2021-41773"]["mitigacion"] and "RewriteCond" in hh["CVE-2021-41773"]["regla"]
+assert [e[0] for e in hh["CVE-2021-41773"]["exploits"]] == [50383, 50512]
+assert [e[0] for e in hh["CVE-2018-7600"]["exploits"]] == [44448, 44449, 44482]   # sin duplicados del espejo
+assert evaluar.parche("X", {"hasta_excl": "2.4.60"}) == "Actualizar X a 2.4.60 o posterior."
+# nivel 4: fuera de KEV pero con exploit publico; un exploit solo DoS no cuenta
+assert evaluar.nivel(False, {}, 5.0, "2026-11-21", reglas, [[1, 1, "webapps", "", ""]]) == 4
+assert evaluar.nivel(False, {}, 5.0, "2026-11-21", reglas, [[1, 1, "dos", "", ""]]) == 7
+assert evaluar.nivel(False, {}, 9.8, "2026-11-21", reglas) == 5
+# importador: CSV con el formato de files_exploits.csv
+csv_txt = ("id,file,description,date_published,author,type,platform,port,date_added,date_updated,verified,codes\n"
+           "1,a,\"X - RCE\",2020-01-01,a,webapps,php,,,,1,CVE-2020-0001;OSVDB-9\n"
+           "1,a,\"X - RCE\",2020-01-01,a,webapps,php,,,,1,CVE-2020-0001\n"
+           "2,b,\"Y (CVE-2019-0002) - DoS\",2019-01-01,b,dos,linux,,,,0,\n")
+ix = catalogo.indexar_exploitdb(csv_txt)
+assert ix == {"CVE-2020-0001": [[1, 1, "webapps", "2020-01-01", "X - RCE"]],
+              "CVE-2019-0002": [[2, 0, "dos", "2019-01-01", "Y (CVE-2019-0002) - DoS"]]}, ix
+
 out = tempfile.mkdtemp()
 md, js = reporte.guardar("MUNI-GT", invs, res, cat["info"], "2026-11-21", reglas, out)
 texto = open(md, encoding="utf-8").read()
 assert os.path.basename(md) == "reporte-muni-gt.md"
 assert "NO CUMPLE" in texto and "CVE-2018-7600" in texto and "catalogos de ejemplo" in texto
+assert "## 2. Como corregir" in texto and "EDB-50383 (verificado)" in texto and "RewriteCond" in texto
 assert json.load(open(js, encoding="utf-8"))["entidad"] == "MUNI-GT"
 
 # --- TLS obsoleto (crawler) y alertas de configuracion (colector de codigo) ---
@@ -85,7 +109,7 @@ assert all(c["recomendacion"] for c in r3["configuracion"]), r3["configuracion"]
 assert len(r3["configuracion"]) == 3 and len(r3["notas_colectores"]) == 1
 assert not any(c["producto"] == "TLS" for c in r3["sin_mapeo"])
 txt = reporte.markdown("MUNI-GT", [web, cod], r3, cat["info"], "2026-11-21", reglas)
-assert "## 4. Configuracion insegura" in txt and "RFC 8996" in txt and "permiso denegado" in txt
+assert "## 5. Configuracion insegura" in txt and "RFC 8996" in txt and "permiso denegado" in txt
 
 # --- catalogos congelados del equipo (catalogos/, formato nvd-kev.json) ---
 nk = catalogo.convertir_nvd_kev({"cves": {"CVE-X": {"cvss": 9.8, "cpes": [

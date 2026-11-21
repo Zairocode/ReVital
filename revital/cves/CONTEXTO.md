@@ -39,7 +39,7 @@ flowchart TD
         N["1. normalizar.py + alias.json<br/>'Apache' -> apache:http_server"]
         D["2. evaluar.py: une y limpia<br/>quita duplicados, 'Drupal 7' -> 7.57"]
         V["3. versiones.py<br/>¿la versión cae en el rango de NVD?"]
-        KV["4. ¿El CVE está en KEV?"]
+        KV["4. ¿El CVE está en KEV?<br/>¿hay exploit público?"]
         P["5. Prioridad + reglas.json<br/>ransomware, fecha vencida, CVSS, condicionales"]
         E["Fin de soporte<br/>alias.json: eol"]
         C["Configuración insegura<br/>TLS viejo, alertas de colectores"]
@@ -49,10 +49,12 @@ flowchart TD
     DN --> V
     DX -.-> V
     DK --> KV
+    EDB[("revital/cves/exploitdb.json<br/>índice de Exploit-DB")] --> KV
+    M["Cómo corregir<br/>parche (de NVD) + mitigación (reglas.json)"]
     D --> E
     D --> C
     C --> MD
-    P --> MD["salida/reporte-ENTIDAD.md<br/>para el jefe de TI"]
+    P --> M --> MD["salida/reporte-ENTIDAD.md<br/>para el jefe de TI"]
     E --> MD
     P --> JS["salida/hallazgos-ENTIDAD.json<br/>detalle completo"]
 ```
@@ -67,7 +69,9 @@ Versión texto (por si el visor no muestra Mermaid):
    2. unir         mismo producto+versión de varias fuentes = 1 fila; 'Drupal 7' se descarta si se sabe 7.57
    3. versiones    ¿2.4.49 está dentro del rango afectado?        (catalogos/nvd-kev.json [+ datos/nvd_min.json])
    4. KEV          ¿ese CVE se está explotando?                    (catalogos/kev.json)
-   5. prioridad    KEV+ransomware > KEV vencido > KEV > CVSS≥9 > CVSS≥7 > resto (reglas.json)
+                   ¿hay código de ataque público?                  (exploitdb.json)
+   5. prioridad    KEV+ransomware > KEV vencido > KEV > exploit público > CVSS≥9 > CVSS≥7 > resto
+   6. corregir     parche = primera versión corregida según NVD; mitigación y regla de ejemplo (reglas.json)
                         │
                         ▼
    salida/reporte-<entidad>.md  +  salida/hallazgos-<entidad>.json
@@ -95,6 +99,7 @@ No leemos nada propio de cada colector. Solo el contrato de `revital/inventory.p
 |---|---|---|---|
 | **CISA KEV** | Qué CVE se explotan activamente, si los usa ransomware, acción requerida y fecha límite | Qué versiones afecta | `catalogos/kev.json` |
 | **NVD** (NIST), extracto KEV | Qué versiones afecta cada CVE de KEV (CPE + rangos) y su CVSS | Si se está explotando | `catalogos/nvd-kev.json` |
+| **Exploit-DB** (índice) | Si existe código de ataque **público** para la CVE (id, verificado, tipo) | Si alguien lo está usando (eso es KEV) | `revital/cves/exploitdb.json` |
 | **NVD** completo, opcional | Lo mismo para **todas** las CVE de los productos de `alias.json`, no solo KEV (sección 4 del reporte) | — | `revital/cves/datos/nvd_min.json` (local, no se sube) |
 
 Los dos primeros los congeló el equipo en `catalogos/` con `python scripts/actualizar_catalogos.py` (ver `catalogos/LEEME.md`): son **la fuente oficial** y viajan con el repo. El tercero es un extra que cada quien genera con `python -m revital.cves --actualizar` si quiere ver también las CVE que no están en KEV; pesa unos 8 MB y por eso no se sube.
@@ -118,7 +123,9 @@ KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD
 | **CVE condicionales aparte** (`reglas.json`) | Algunos CVE solo aplican con cierta configuración que no se ve desde fuera (ej. CVE-2024-38475, reglas de mod_rewrite). Se reportan como "verificar", no como confirmados. |
 | **Configuración insegura** separada de los CVE | `TLS 1.0` o un `web.config` en modo depuración no son software con CVE, pero son riesgos que se corrigen cambiando configuración, sin parche. Antes caían en "sin equivalencia en NVD". |
 | **Fin de soporte (EOL)** separado de los CVE | Un Drupal 7 no recibirá más parches: la recomendación no es "parchar" sino "planificar migración". Importante para gobierno. |
-| **Solo lectura** | Nunca se descargan ni ejecutan exploits; solo se leen catálogos públicos. |
+| **Exploit-DB como señal, no como fuente** | Que exista un exploit público no prueba que se esté usando (eso lo dice KEV), pero sí que cualquiera puede atacar. Por eso va **después** de KEV y **antes** del CVSS. Un exploit solo de denegación de servicio (`dos`) no sube el nivel. |
+| **Parche calculado, mitigación curada** | La versión corregida sale sola del rango de NVD ("hasta antes de 2.4.60" → actualizar a 2.4.60). La mitigación temporal no existe en ningún catálogo: se escribe a mano en `reglas.json` solo para las CVE importantes, y se probó en Apache + ModSecurity reales (ataque = 403, uso normal = 200). |
+| **Solo lectura** | Nunca se descargan ni ejecutan exploits; de Exploit-DB solo se lee el índice (número, título, tipo, si está verificado). |
 
 ---
 
@@ -129,11 +136,12 @@ KEV dice "este CVE de Apache se explota" pero no dice "hasta qué versión". NVD
 | 1 | CRITICO | En KEV **y** `knownRansomwareCampaignUse = "Known"` |
 | 2 | URGENTE (vencido) | En KEV y ya pasó la `dueDate` de CISA |
 | 3 | URGENTE | En KEV |
-| 4 | ALTO | No está en KEV, CVSS ≥ 9.0 |
-| 5 | MEDIO | No está en KEV, CVSS ≥ 7.0 |
-| 6 | BAJO | Resto |
+| 4 | ALTO (exploit público) | No está en KEV, pero hay código de ataque público en Exploit-DB (que no sea solo DoS) |
+| 5 | ALTO | No está en KEV, CVSS ≥ 9.0 |
+| 6 | MEDIO | No está en KEV, CVSS ≥ 7.0 |
+| 7 | BAJO | Resto |
 
-Dentro de cada nivel se ordena por CVSS. Los umbrales están en `reglas.json`. Es la prioridad que propone `docs/ReVital-explicado.md` (sección 7.5).
+Dentro de cada nivel se ordena por CVSS. Los umbrales están en `reglas.json`. Parte de la prioridad que propone `docs/ReVital-explicado.md` (sección 7.5) y le agrega el nivel 4.
 
 ---
 
@@ -142,13 +150,14 @@ Dentro de cada nivel se ordena por CVSS. Los umbrales están en `reglas.json`. E
 `salida/reporte-<entidad>.md`, pensado para un jefe de TI:
 
 1. **Resumen** con indicadores y estado de **cumplimiento** ("NO CUMPLE: N vulnerabilidades KEV sin parchear").
-2. **Qué parchear primero:** solo KEV, con motivo, acción requerida por CISA, fecha límite y evidencia.
-3. **Dependen de configuración** (verificar).
-4. **Fuera de soporte** (planificar migración).
-5. **Configuración insegura:** protocolos obsoletos que acepta el servidor (`TLS 1.0/1.1`, que reporta el crawler) y alertas de los colectores (ej. `web.config` con `debug=true` o `customErrors Off`, del colector de código), cada una con su recomendación (`reglas.json`).
-6. **Otras vulnerabilidades** no KEV (las 20 más graves; el resto en el `.json`).
-7. **Revisión manual:** sin versión, versión incompleta, productos sin alias y avisos de cobertura de los colectores.
-8. **Inventario** completo con fuente y dónde, y el método usado.
+2. **Qué parchear primero:** solo KEV, con motivo, si hay exploit público, fecha límite de CISA y evidencia.
+3. **Cómo corregir cada hallazgo KEV:** parche (versión corregida según NVD), acción requerida por CISA, exploits públicos (EDB-ID) y, para las CVE importantes, una mitigación temporal con la regla de ejemplo para Apache o ModSecurity (el puente hacia el "parche virtual" de la Capa 2).
+4. **Dependen de configuración** (verificar).
+5. **Fuera de soporte** (planificar migración).
+6. **Configuración insegura:** protocolos obsoletos que acepta el servidor (`TLS 1.0/1.1`, que reporta el crawler) y alertas de los colectores (ej. `web.config` con `debug=true` o `customErrors Off`, del colector de código), cada una con su recomendación (`reglas.json`).
+7. **Otras vulnerabilidades** no KEV, con exploit público y parche (las 20 más graves; el resto en el `.json`).
+8. **Revisión manual:** sin versión, versión incompleta, productos sin alias y avisos de cobertura de los colectores.
+9. **Inventario** completo con fuente y dónde, y el método usado.
 
 `salida/hallazgos-<entidad>.json` trae todo el detalle, para un dashboard u otra herramienta.
 
@@ -196,10 +205,14 @@ python -m revital.cves --out salida --entidad MUNI-GT
 python -m revital.cves --actualizar           # opcional: NVD completo de los productos de alias.json a datos/ (internet, minutos)
 python scripts/actualizar_catalogos.py        # KEV + extracto NVD oficiales en catalogos/ (script del equipo)
 python -m revital.cves --actualizar --productos php,drupal   # solo algunos productos
+python -m revital.cves --exploitdb            # índice de Exploit-DB a revital/cves/exploitdb.json (internet)
+python -m revital.cves --exploitdb C:\Descargas\files_exploits.csv   # o desde el CSV bajado con el navegador
 python tests/test_cves.py                     # pruebas (sin pytest)
 ```
 
-`--demo` siempre usa los catálogos de `ejemplos/`, a propósito, para que la prueba dé siempre el mismo resultado. Con `NVD_API_KEY` en el entorno, `--actualizar` va más rápido.
+`--demo` siempre usa los catálogos de `ejemplos/`, a propósito, para que la prueba dé siempre el mismo resultado.
+
+**Exploit-DB:** el índice oficial está en GitLab (`files_exploits.csv` de `exploit-database/exploitdb`); si no se puede bajar, se usa un espejo por CVE. Se guarda en `revital/cves/exploitdb.json` (solo número, título, tipo y si está verificado) y se sube al repo para que la demo funcione sin internet. Con `NVD_API_KEY` en el entorno, `--actualizar` va más rápido.
 
 ---
 
@@ -207,13 +220,14 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 
 | Archivo | Qué hace |
 |---|---|
-| `__main__.py` | Línea de comandos: `--demo`, `--out`, `--entidad`, `--actualizar` |
+| `__main__.py` | Línea de comandos: `--demo`, `--out`, `--entidad`, `--actualizar`, `--exploitdb` |
 | `normalizar.py` + `alias.json` | Nombre del colector → CPE de NVD; ramas fuera de soporte |
 | `versiones.py` | Comparación de versiones y rangos de NVD |
-| `catalogo.py` | Lee `catalogos/` (KEV + `nvd-kev.json`) y el extra de `datos/`; convierte formatos de NVD; `--actualizar` |
-| `evaluar.py` + `reglas.json` | Une componentes, cruza, prioriza; CVE condicionales y umbrales |
+| `catalogo.py` | Lee `catalogos/` (KEV + `nvd-kev.json`), el extra de `datos/` y `exploitdb.json`; convierte formatos; `--actualizar` y `--exploitdb` |
+| `evaluar.py` + `reglas.json` | Une componentes, cruza, prioriza, calcula el parche; CVE condicionales, umbrales, mitigaciones y alertas |
+| `exploitdb.json` | Índice de Exploit-DB por CVE (lo genera `--exploitdb`) |
 | `reporte.py` | Escribe el `.md` y el `.json` |
-| `ejemplos/` | Inventario real del crawler (caso Drupal) + KEV y NVD reducidos |
+| `ejemplos/` | Inventario real del crawler (caso Drupal) + KEV, NVD y Exploit-DB reducidos (datos reales) |
 | `datos/` | Extra local opcional `nvd_min.json` (lo llena `--actualizar`; no se sube al repo) |
 | `../../tests/test_cves.py` | Pruebas: versiones, alias, conversión de NVD, caso Drupal completo |
 
@@ -222,6 +236,7 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 ## 11. Cómo extenderlo
 
 - **Nuevo producto:** agregarlo a `alias.json` con los nombres que usan los colectores y su CPE de NVD (se busca en <https://nvd.nist.gov/products/cpe/search>), después `--actualizar --productos <nombre>`.
+- **Nueva mitigación:** agregarla a `reglas.json > mitigaciones` con `mitigacion` (texto) y `regla` (ejemplo de configuración). Probarla antes: el ataque debe dar 403 y el uso normal 200.
 - **Nuevo CVE condicional:** agregarlo a `reglas.json > condicionales` con el texto de qué verificar.
 - **Coordinación con los colectores:** si un colector emite un nombre nuevo, aparece en el reporte bajo "Sin equivalencia en NVD"; ahí se ve qué falta en `alias.json`.
 
@@ -229,7 +244,10 @@ python tests/test_cves.py                     # pruebas (sin pytest)
 
 ## 12. Pendiente
 
-- [ ] **Exploit-DB** como señal extra: "no está en KEV pero hay exploit público" como nivel entre KEV y CVSS. Se usaría su índice CSV offline; nunca se descargan exploits.
+- [x] **Exploit-DB** como señal extra (nivel 4) y en cada hallazgo KEV.
+- [x] **Mitigación sugerida por CVE** (parche calculado + mitigaciones curadas para el caso y Log4Shell).
+- [ ] Generar `revital/cves/exploitdb.json` con el índice completo (`--exploitdb`, necesita internet) y subirlo.
+- [ ] Más mitigaciones en `reglas.json` para los productos que aparezcan en las demos.
 - [ ] Ampliar `alias.json` con lo que emitan los colectores `codigo` (pom.xml, composer.json, DLLs) y `host` (software instalado en Windows).
 - [ ] EPSS (probabilidad de explotación, de FIRST) como desempate dentro de un mismo nivel.
 - [x] Catálogos offline en el repo: resuelto por el equipo en `catalogos/` (PR #7). Esta rama los usa como fuente principal.

@@ -8,7 +8,7 @@ Extra opcional, local (no se sube al repo; lo genera --actualizar):
   revital/cves/datos/*.json        respuestas crudas del API de NVD guardadas desde el navegador
 Sin catalogos/ se usan los de ejemplos/ y el reporte lo avisa.
 """
-import json, os, ssl, sys, time
+import csv, io, json, os, re, ssl, sys, time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -20,6 +20,10 @@ CATALOGOS = os.path.join(RAIZ, "catalogos")
 DATOS = os.path.join(AQUI, "datos")
 EJEMPLOS = os.path.join(AQUI, "ejemplos")
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+# Exploit-DB: solo se lee su INDICE (que exploit publico existe para cada CVE). Nunca se descarga codigo de ataque.
+EXPLOITDB = os.path.join(AQUI, "exploitdb.json")
+EXPLOITDB_URLS = ("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv",  # oficial
+                  "https://lucacapacci.github.io/exploitdb/exploits.csv")                          # espejo por CVE
 
 
 def _leer(path):
@@ -130,7 +134,58 @@ def cargar(datos=DATOS, demo=False, catalogos=CATALOGOS):
         fuentes, info["ejemplo"] = ["revital/cves/ejemplos/nvd_demo.json"], True
     info["nvd_fuente"], info["nvd_cves"] = ", ".join(fuentes), len(nvd)
     info["solo_kev"] = fuentes == ["catalogos/nvd-kev.json"]
-    return {"kev": kev, "nvd": nvd, "info": info, "indice": indexar(nvd)}
+
+    edb_path = os.path.join(EJEMPLOS, "exploitdb_demo.json") if demo else EXPLOITDB
+    edb = _leer(edb_path) if os.path.exists(edb_path) else {"cves": {}}
+    info["exploitdb_fecha"], info["exploitdb_cves"] = edb.get("generado", ""), len(edb["cves"])
+    return {"kev": kev, "nvd": nvd, "info": info, "indice": indexar(nvd), "exploits": edb["cves"]}
+
+
+# ---------- Exploit-DB: CSV del indice -> {cve: [[id, verificado, tipo, fecha, titulo], ...]} ----------
+
+def indexar_exploitdb(texto_csv):
+    cves = {}
+    for fila in csv.DictReader(io.StringIO(texto_csv)):
+        codigos = (fila.get("codes") or "") + " " + (fila.get("description") or "")
+        for cve in set(re.findall(r"CVE-\d{4}-\d{4,}", codigos.upper())):
+            e = [int(fila["id"]), 1 if str(fila.get("verified", "")).strip() == "1" else 0, fila.get("type", ""),
+                 fila.get("date_published", ""), (fila.get("description") or "")[:100]]
+            lista = cves.setdefault(cve, [])
+            if all(x[0] != e[0] for x in lista):  # el espejo repite filas por etiqueta
+                lista.append(e)
+    for lista in cves.values():
+        lista.sort(key=lambda x: (-x[1], x[0]))  # verificados primero
+    return cves
+
+
+def importar_exploitdb(origen=None, destino=EXPLOITDB, insecure=False):
+    """origen = ruta a files_exploits.csv (bajado con el navegador) o URL; sin origen prueba EXPLOITDB_URLS."""
+    texto, usado = None, None
+    if origen and os.path.exists(origen):
+        with open(origen, encoding="utf-8", errors="replace") as f:
+            texto, usado = f.read(), origen
+    else:
+        ctx = ssl.create_default_context()
+        if insecure:
+            ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+        for url in ([origen] if origen else list(EXPLOITDB_URLS)):
+            print("Bajando indice de Exploit-DB: %s" % url)
+            try:
+                with urlopen(Request(url, headers={"User-Agent": "ReVital/0.1"}), timeout=180, context=ctx) as r:
+                    texto, usado = r.read().decode("utf-8", "replace"), url
+                break
+            except Exception as e:
+                print("  fallo: %s" % e)
+    if not texto:
+        print("No se pudo obtener el indice. Bajar files_exploits.csv con el navegador desde\n  %s\n"
+              "y correr: python -m revital.cves --exploitdb RUTA\\files_exploits.csv" % EXPLOITDB_URLS[0])
+        return False
+    cves = indexar_exploitdb(texto)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump({"generado": time.strftime("%Y-%m-%d"), "fuente": usado, "cves": cves}, f,
+                  ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    print("Listo: %s (%d CVE con exploit publico, %.1f MB)" % (destino, len(cves), os.path.getsize(destino) / 1e6))
+    return True
 
 
 def indexar(nvd):

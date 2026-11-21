@@ -1,5 +1,5 @@
 {
-  "_nota": "Reglas propias de ReVital que NVD/KEV no traen. 'condicionales': el CVE solo aplica si se cumple una configuracion que no se ve desde fuera; se reporta aparte como 'verificar', no como confirmado. 'umbral_alto' y 'umbral_medio' son cortes de CVSS para lo que no esta en KEV. 'protocolos_obsoletos': componentes que no son software sino protocolos inseguros aceptados (los reporta el crawler). 'alertas': recomendacion para alertas de configuracion que emiten los colectores en extra.alertas (se busca el texto en minusculas).",
+  "_nota": "Reglas propias de ReVital que NVD/KEV no traen. 'condicionales': el CVE solo aplica si se cumple una configuracion que no se ve desde fuera; se reporta aparte como 'verificar', no como confirmado. 'umbral_alto' y 'umbral_medio' son cortes de CVSS para lo que no esta en KEV. 'protocolos_obsoletos': componentes que no son software sino protocolos inseguros aceptados (los reporta el crawler). 'alertas': recomendacion para alertas de configuracion que emiten los colectores en extra.alertas (se busca el texto en minusculas). 'mitigaciones': que hacer MIENTRAS no se puede actualizar (configuracion o regla en el proxy/WAF delante del legacy). Son ejemplos: probarlos en un entorno de prueba (ataque = 403, uso normal = 200) antes de produccion. El parche (version corregida) se calcula solo desde NVD.",
   "condicionales": {
     "CVE-2024-38475": "Solo si el servidor usa reglas RewriteRule de mod_rewrite que sustituyen con rutas del sistema de archivos. Revisar la configuracion de Apache.",
     "CVE-2019-6340": "Solo si el modulo RESTful Web Services esta activo y acepta PATCH/POST.",
@@ -25,5 +25,35 @@
   "notas_colector": [
     "se alcanzo el tope",
     "no se pudo leer"
-  ]
+  ],
+  "mitigaciones": {
+    "CVE-2021-41773": {
+      "mitigacion": "Verificar que la configuracion tenga <Directory /> con 'Require all denied' (impide leer archivos fuera de la raiz web) y desactivar mod_cgi si no se usa (impide ejecutar codigo). Agregar la regla en el proxy.",
+      "regla": "# Apache delante del legacy (proxy): rechazar rutas con puntos codificados\nRewriteEngine On\nRewriteCond %{THE_REQUEST} \"(%2e|%%32%65|%252e)\" [NC]\nRewriteRule ^ - [F]"
+    },
+    "CVE-2021-42013": {
+      "mitigacion": "Igual que CVE-2021-41773 (es su arreglo incompleto, con doble codificacion): 'Require all denied' en <Directory />, desactivar mod_cgi si no se usa y la misma regla en el proxy.",
+      "regla": "# Apache delante del legacy (proxy): rechazar rutas con puntos codificados\nRewriteEngine On\nRewriteCond %{THE_REQUEST} \"(%2e|%%32%65|%252e)\" [NC]\nRewriteRule ^ - [F]"
+    },
+    "CVE-2021-40438": {
+      "mitigacion": "Rechazar peticiones que incluyan 'unix:' en la URL (abuso de mod_proxy para hacer peticiones internas, SSRF).",
+      "regla": "# Apache\nRewriteEngine On\nRewriteCond %{THE_REQUEST} \"unix:\" [NC]\nRewriteRule ^ - [F]"
+    },
+    "CVE-2018-7600": {
+      "mitigacion": "Bloquear en un WAF los parametros cuyo NOMBRE contiene '#' (asi se inyectan los render arrays de Drupal). Requiere inspeccionar el cuerpo POST, por eso es ModSecurity y no solo mod_rewrite.",
+      "regla": "# ModSecurity (WAF): Drupal nunca recibe nombres de parametro con '#' de un usuario legitimo\nSecRule ARGS_NAMES \"@contains #\" \"id:900100,phase:2,deny,status:403,msg:'Drupal render array (Drupalgeddon)'\"\nSecRule ARGS:element_parents|ARGS:destination \"@rx #\" \"id:900101,phase:2,t:urlDecodeUni,t:urlDecodeUni,deny,status:403\""
+    },
+    "CVE-2018-7602": {
+      "mitigacion": "Misma regla WAF que CVE-2018-7600; ademas cubre el parametro 'destination' con '#' codificado dos veces.",
+      "regla": "# ModSecurity (WAF): Drupal nunca recibe nombres de parametro con '#' de un usuario legitimo\nSecRule ARGS_NAMES \"@contains #\" \"id:900100,phase:2,deny,status:403,msg:'Drupal render array (Drupalgeddon)'\"\nSecRule ARGS:element_parents|ARGS:destination \"@rx #\" \"id:900101,phase:2,t:urlDecodeUni,t:urlDecodeUni,deny,status:403\""
+    },
+    "CVE-2021-44228": {
+      "mitigacion": "Si no se puede actualizar de inmediato: quitar la clase JndiLookup del jar de log4j-core y reiniciar. Revisar tambien jars de log4j incluidos dentro de otras aplicaciones (.war/.ear).",
+      "regla": "# Dentro del servidor (mitigacion oficial de Apache cuando no se puede actualizar):\nzip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class\n# y reiniciar la aplicacion. Bloquear '${jndi:' en el proxy ayuda poco: se evade con facilidad."
+    },
+    "CVE-2021-45046": {
+      "mitigacion": "Igual que CVE-2021-44228: quitar la clase JndiLookup del jar de log4j-core y reiniciar.",
+      "regla": "# Dentro del servidor (mitigacion oficial de Apache cuando no se puede actualizar):\nzip -q -d log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class\n# y reiniciar la aplicacion. Bloquear '${jndi:' en el proxy ayuda poco: se evade con facilidad."
+    }
+  }
 }
