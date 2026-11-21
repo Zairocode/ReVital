@@ -15,6 +15,7 @@
 services:
   db:
     image: mariadb:10.5
+    container_name: revital-db
     # En Mac con chip Apple (M1/M2/M3) descomentar la siguiente linea:
     # platform: linux/amd64
     environment:
@@ -28,24 +29,31 @@ services:
 
   drupal:
     image: drupal:7.57
+    container_name: revital-drupal
     # platform: linux/amd64   # descomentar en Mac Apple Silicon
     depends_on: [db]
-    volumes:
-      - drupal_files:/var/www/html/sites/default/files
+    # Nota: NO montamos un volumen en sites/default/files. Un volumen con nombre se crea como
+    # root y Drupal (www-data) no puede escribir, lo que rompe el instalador (habia que hacer
+    # chown a mano). Sin el volumen, Drupal usa el directorio de la imagen, con permisos correctos.
+    # (Para el demo no necesitamos persistir los archivos subidos.)
     networks: [interna]
     # No se publica puerto: solo se llega a traves del proxy Apache 2.4.49
 
   proxy:
     build: ./apache          # Apache 2.4.49 con config vulnerable (ver apache/)
+    container_name: revital-proxy
     # platform: linux/amd64   # descomentar en Mac Apple Silicon
     depends_on: [drupal]
+    # IMPORTANTE: el PUERTO PUBLICADO debe apuntar SIEMPRE a este servicio 'proxy' (Apache 2.4.49),
+    # nunca directo a 'drupal'. Si lo cambias (p.ej. en un compose.override.yml), manten el destino :80
+    # de 'proxy'. Si publicas el puerto contra 'drupal', ReVital veria el Apache 2.4.10 del backend y
+    # CVE-2021-41773 NO se reproduce (fue justo lo que paso al desplegar en phobos).
     ports:
-      - "8080:80"            # el portal queda en http://localhost:8080
+      - "8080:80"            # el portal queda en http://localhost:8080 (via el proxy 2.4.49)
     networks: [interna]
 
 volumes:
   db_data:
-  drupal_files:
 
 networks:
   interna:
