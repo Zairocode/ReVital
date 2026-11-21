@@ -79,8 +79,8 @@ def _leer(s, tope=2048):
     return datos
 
 
-def sonda(ip, puerto, timeout=1.0, espera=0.6):
-    """Conecta al puerto: None si esta cerrado; si no, lo que el servicio dijo (por si solo o ante un HEAD HTTP)."""
+def sonda(ip, puerto, timeout=1.0, espera=0.6, ruta="/"):
+    """Conecta al puerto: None si esta cerrado; si no, lo que el servicio dijo (por si solo o ante un HEAD HTTP a `ruta`)."""
     try:
         s = socket.create_connection((ip, puerto), timeout=timeout)
     except OSError:
@@ -97,10 +97,10 @@ def sonda(ip, puerto, timeout=1.0, espera=0.6):
                 pass
             s = ctx.wrap_socket(s, server_hostname=ip)
         s.settimeout(espera)
-        datos = b"" if tls else _leer(s)  # los servicios que hablan primero (SSH, FTP, SMTP, MySQL) no necesitan que se les pregunte
+        datos = b"" if tls or ruta != "/" else _leer(s)  # los servicios que hablan primero (SSH, FTP, SMTP, MySQL) no necesitan que se les pregunte
         if not datos:
             try:
-                s.sendall(b"HEAD / HTTP/1.0\r\nHost: " + ip.encode() + b"\r\nUser-Agent: ReVital-red/0.1\r\n\r\n")
+                s.sendall(b"HEAD " + ruta.encode() + b" HTTP/1.0\r\nHost: " + ip.encode() + b"\r\nUser-Agent: ReVital-red/0.1\r\n\r\n")
                 datos = _leer(s)
             except OSError:
                 pass
@@ -157,6 +157,16 @@ def identificar(puerto, datos):
     return SERVICIOS.get(puerto, "desconocido"), prods
 
 
+def servidor_de_enfrente(ip, puerto, ya, timeout=1.0, espera=0.6):
+    """Un proxy suele dejar pasar el header Server del backend; una URL mal formada (/%zz) la rechaza el propio proxy
+    con su error 400 y ahi aparece su version real (misma tecnica que revital.crawler). -> [(producto, version)] nuevos."""
+    r = sonda(ip, puerto, timeout, espera, ruta="/%zz")
+    if not r or not r["datos"]:
+        return []
+    serv, prods = identificar(puerto, r["datos"])
+    return [pv for pv in prods if pv not in ya] if serv in ("HTTP", "HTTPS") else []
+
+
 def escanear(ips, puertos=PUERTOS, timeout=1.0, espera=0.6, hilos=16, pausa=0.0):
     """Prueba cada par (equipo, puerto) con pocas conexiones a la vez. -> lista de equipos con algun puerto abierto."""
     def uno(par):
@@ -169,7 +179,10 @@ def escanear(ips, puertos=PUERTOS, timeout=1.0, espera=0.6, hilos=16, pausa=0.0)
             if r is not None:
                 serv, prods = identificar(p, r["datos"])
                 linea = r["datos"].decode("latin-1", "replace").splitlines()[0].strip()[:120] if r["datos"].strip() else ""
-                abiertos.setdefault(ip, []).append({"puerto": p, "servicio": serv, "tls": r["tls"], "banner": re.sub(r"[^\x20-\x7e]", ".", linea), "productos": prods})
+                fila = {"puerto": p, "servicio": serv, "tls": r["tls"], "banner": re.sub(r"[^\x20-\x7e]", ".", linea), "productos": prods}
+                if serv in ("HTTP", "HTTPS"):
+                    fila["frente"] = servidor_de_enfrente(ip, p, prods, timeout, espera)
+                abiertos.setdefault(ip, []).append(fila)
     return [{"ip": ip, "puertos": sorted(ps, key=lambda x: x["puerto"])} for ip, ps in sorted(abiertos.items(), key=lambda kv: tuple(int(o) for o in kv[0].split(".")))]
 
 
@@ -186,6 +199,10 @@ def a_inventario(equipos, objetivo, entidad="", tls=None):
                 if k not in vistos:
                     vistos.add(k)
                     comps.append(inventory.componente(prod, ver, "banner del servicio %s (puerto %d)" % (p["servicio"], p["puerto"]), donde))
+            for prod, ver in p.get("frente", []):
+                if (prod, ver, donde) not in vistos:
+                    vistos.add((prod, ver, donde))
+                    comps.append(inventory.componente(prod, ver, "header server en error 400 (servidor de enfrente, puerto %d)" % p["puerto"], donde))
             if p["servicio"] in SENSIBLES:
                 alertas.append("Servicio inseguro expuesto: %s en %s (puerto %d) accesible desde la red" % (SENSIBLES[p["servicio"]], h["ip"], p["puerto"]))
             elif p["servicio"] == "RDP":
@@ -211,6 +228,8 @@ def to_markdown(inv):
     for h in x["equipos"]:
         for p in h["puertos"]:
             prod = ", ".join(("%s %s" % pv).strip() for pv in p["productos"]) or "-"
+            if p.get("frente"):
+                prod += " · enfrente: " + ", ".join(("%s %s" % pv).strip() for pv in p["frente"])
             out.append("| %s | %d | %s | %s | %s |" % (h["ip"], p["puerto"], p["servicio"], prod.replace("|", "/"), p["banner"].replace("|", "/")))
     return "\n".join(out) + "\n"
 
