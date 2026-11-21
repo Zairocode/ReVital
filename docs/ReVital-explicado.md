@@ -230,6 +230,14 @@ Correrá en el propio equipo/servidor Windows viejo: software instalado, versió
 
 ---
 
+### 7.6 Panel y sentinela — `revital/panel/`, `revital/sentinela.py`
+**Panel local** (`python -m revital.panel --abrir`): para el jefe de TI. Muestra por entidad si cumple o no, qué parchear primero (con la acción y fecha límite de CISA), todas las vulnerabilidades con su evidencia, el inventario y la documentación (ver en pantalla, descargar archivo o `.zip`). También lanza análisis (sitio web o carpeta de código) con una casilla obligatoria de autorización. Es solo lectura sobre `salida/`: no calcula nada, muestra lo que producen los colectores y `revital.cves`.
+- Solo biblioteca estándar, sin JavaScript ni recursos de internet, para equipos viejos.
+- Escucha solo en `127.0.0.1`; rechaza `Host` y `Origin` ajenos; solo sirve archivos de `salida/` (sin `../`); escapa todo el contenido; ejecuta los colectores sin shell.
+- No tiene clave porque no sale del equipo. Si algún día se expone en red, hay que agregar clave y HTTPS.
+
+**Sentinela** (`python -m revital.sentinela --config sentinela.json`): cada `cada_minutos` re-analiza los objetivos, evalúa, guarda una foto en `salida/historial/<entidad>/` y compara con la anterior. Detecta componente nuevo o quitado, versión cambiada, KEV nueva o resuelta, cambio de cumplimiento y objetivos que no responden. Escribe `salida/alertas.jsonl` (lo muestra el panel) y, si se configura `al_detectar_cambio`, ejecuta ese comando con `REVITAL_ENTIDAD` y `REVITAL_ALERTAS`. La primera vuelta es solo línea base.
+Pruebas: `tests/test_panel.py` y `tests/test_sentinela.py` (verificadas en Python 3.8 + OpenSSL 1.1.1).
 ## 8. Cómo trabajamos en el repo
 
 | Rama | Carpeta/archivo que toca | Qué |
