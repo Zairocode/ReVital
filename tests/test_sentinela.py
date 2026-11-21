@@ -43,6 +43,30 @@ assert len(datos.historial(salida, "muni-gt")) == 2 and datos.historial(salida, 
 # sin cambios no hay ruido ni se vuelve a llamar al comando
 os.remove(marca)
 assert sentinela.registrar(cfg, salida, "MUNI-GT") == [] and not os.path.exists(marca)
+# si el objetivo deja de responder (0 componentes) es una alerta, no "paso a cumplir"
+vacio = {"entidad": "X", "componentes": {}, "kev": {}, "no_kev": 0, "cumple": False}
+antes = {"entidad": "X", "componentes": {"Drupal": ["7.57"]}, "kev": {}, "no_kev": 0, "cumple": True}
+antes = {"entidad": "X", "componentes": {"Drupal": ["7.57"], "Apache": ["2.4.49"]},
+         "kev": {"CVE-2018-7600 | Drupal 7.57": "CRITICO", "CVE-2021-41773 | Apache 2.4.49": "CRITICO"}, "cumple": False}
+assert [(e["tipo"], e["severidad"]) for e in sentinela.comparar(antes, vacio)] == [("sin_datos", "alta")],     "caerse NO es 'ya no aplica': no debe haber componente_quitado ni kev_resuelta"
+
+# una entidad con VARIOS objetivos y uno caido: se alerta, el reporte dice INCOMPLETO y no se compara ni se guarda foto engañosa
+import socket
+bueno = tempfile.mkdtemp()
+with open(os.path.join(bueno, "requirements.txt"), "w") as f:
+    f.write("Django==1.4.5" + chr(10))
+cerrado = socket.socket(); cerrado.bind(("127.0.0.1", 0)); muerto = cerrado.getsockname()[1]; cerrado.close()
+sal2 = tempfile.mkdtemp()
+est2 = sentinela.vuelta({"salida": sal2, "objetivos": [{"entidad": "MIXTA", "tipo": "codigo", "destino": bueno},
+                                                       {"entidad": "MIXTA", "tipo": "web", "destino": "http://127.0.0.1:%d" % muerto}]}, sal2)
+assert [o["ok"] for o in est2] == [True, False], est2
+assert any(a["tipo"] == "objetivo_inalcanzable" for a in datos.alertas(sal2))
+assert not datos.historial(sal2, "mixta"), "con un objetivo caido no se guarda foto ni se compara"
+rep2 = open(os.path.join(sal2, "reporte-mixta.md"), encoding="utf-8").read()
+assert "INCOMPLETO" in rep2 and "127.0.0.1:%d" % muerto in rep2, rep2[:400]
+assert datos.leer(os.path.join(sal2, "hallazgos-mixta.json"))["sin_respuesta"][0]["target"].endswith(str(muerto))
+assert sentinela.foto({"entidad": "X", "componentes": [], "hallazgos": []})["cumple"] is False
+
 # el ciclo completo (vigilar) crea la carpeta y deja el estado para el panel, aunque no haya objetivos
 nueva = os.path.join(tempfile.mkdtemp(), "no", "existe")
 sentinela.vigilar({"salida": nueva, "objetivos": []}, una_vez=True)

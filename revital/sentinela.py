@@ -42,7 +42,7 @@ def foto(hallazgos):
             kev["%s | %s %s" % (h["cve"], h["producto"], h["version"])] = h.get("nivel_txt", "")
     return {"entidad": hallazgos.get("entidad", ""), "componentes": {k: sorted(v) for k, v in comps.items()},
             "kev": kev, "no_kev": sum(1 for h in hallazgos.get("hallazgos", []) if not h.get("en_kev")),
-            "cumple": not kev}
+            "cumple": not kev and bool(comps)}
 
 
 def comparar(prev, nuevo):
@@ -54,6 +54,10 @@ def comparar(prev, nuevo):
     def add(tipo, sev, detalle):
         ev.append({"tipo": tipo, "severidad": sev, "detalle": detalle})
 
+    if prev["componentes"] and not nuevo["componentes"]:
+        # Antes de cualquier otra comparacion: si no se ve nada, NO se parcheo todo (no hay componente_quitado ni kev_resuelta)
+        add("sin_datos", "alta", "El analisis ya no encuentra ningun componente: el objetivo dejo de responder o no se pudo leer")
+        return ev
     for prod in sorted(set(nuevo["componentes"]) | set(prev["componentes"])):
         a, b = prev["componentes"].get(prod), nuevo["componentes"].get(prod)
         if a is None:
@@ -107,7 +111,7 @@ def _correr(cmd, timeout):
 def vuelta(cfg, salida, timeout=900):
     """Un ciclo: re-analiza cada objetivo, evalua cada entidad, compara y avisa. -> estado de los objetivos."""
     os.makedirs(salida, exist_ok=True)
-    estado, entidades = [], []
+    estado, entidades, fallidas = [], [], set()
     for o in cfg["objetivos"]:
         ent = o["entidad"]
         if o["tipo"] == "web":
@@ -124,6 +128,7 @@ def vuelta(cfg, salida, timeout=900):
             rc, cola = 1, str(e)
         estado.append(dict(o, ok=(rc == 0), detalle="" if rc == 0 else cola.strip()[-200:]))
         if rc != 0:
+            fallidas.add(ent)  # con un objetivo caido los datos de la entidad estan incompletos: no se compara contra la vuelta anterior
             _alertar(salida, ent, [{"tipo": "objetivo_inalcanzable", "severidad": "alta",
                                     "detalle": "No se pudo analizar %s (%s): %s" % (o["destino"], o["tipo"], cola.strip()[-120:])}])
         if ent not in entidades:
@@ -132,6 +137,8 @@ def vuelta(cfg, salida, timeout=900):
         try:
             _correr(["revital.cves", "--out", salida, "--entidad", ent], timeout)
         except (OSError, subprocess.SubprocessError):
+            continue
+        if ent in fallidas:  # el reporte se regenera (y marca el objetivo sin respuesta), pero sin eventos ni foto engañosos
             continue
         registrar(cfg, salida, ent)
     return estado

@@ -100,7 +100,9 @@ def kpi(n, texto, clase="neu"):
     return '<div class="k %s"><div class="n">%s</div><div class="t">%s</div></div>' % (clase, e(str(n)), e(texto))
 
 
-def estado_chip(cumple):
+def estado_chip(cumple, sin_datos=False):
+    if sin_datos:
+        return '<span class="estado" style="background:#e2e8f0;color:#334155">SIN DATOS</span>'
     return '<span class="estado si">CUMPLE</span>' if cumple else '<span class="estado no">NO CUMPLE</span>'
 
 
@@ -125,7 +127,7 @@ def inicio(ents, alertas, estado_s, mensaje=""):
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">con ransomware</div></div>'
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">componentes</div></div></div>'
                      '<a class="btn" href="/e/%s">Abrir</a> <a class="btn sec" href="/zip/%s">Descargar documentación</a></div>'
-                     % ("bien" if r["cumple"] else "mal", e(x["entidad"]), estado_chip(r["cumple"]), e(x["h"].get("fecha_evaluacion", "")),
+                     % ("bien" if r["cumple"] else "mal", e(x["entidad"]), estado_chip(r["cumple"], r.get("sin_datos")), e(x["h"].get("fecha_evaluacion", "")),
                         e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#ff6b57" if r["kev"] else "#34c38f",
                         r["kev"], r["ransomware"], r["componentes"], e(x["slug"]), e(x["slug"])))
         b.append("</div>")
@@ -190,7 +192,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
     cab = ('<p class="sub"><a href="/">← Todas las entidades</a></p><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">'
            '<div><h1>%s</h1><p class="sub" style="margin:0">Evaluado el %s · catálogo CISA KEV %s · %d componentes analizados</p></div>'
            '<div>%s &nbsp; <a class="btn" href="/zip/%s">Descargar documentación (.zip)</a></div></div>'
-           % (e(x["entidad"]), e(h.get("fecha_evaluacion", "")), e(h.get("catalogos", {}).get("kev_version", "?")), r["componentes"], estado_chip(r["cumple"]), e(x["slug"])))
+           % (e(x["entidad"]), e(h.get("fecha_evaluacion", "")), e(h.get("catalogos", {}).get("kev_version", "?")), r["componentes"], estado_chip(r["cumple"], r.get("sin_datos")), e(x["slug"])))
     cuerpo = ""
     if tab == "hallazgos":
         hall = sorted(h.get("hallazgos", []), key=lambda z: (datos.ORDEN_NIVEL.get(z.get("nivel_txt"), 9), -float(z.get("cvss") or 0)))
@@ -241,6 +243,13 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
                       kpi(r["condicionales"], "dependen de configuración"), kpi(r["eol"], "fuera de soporte", "med" if r["eol"] else "bien")))
         filas = "".join("<tr><td>%s</td><td><b>%s</b></td><td>%s %s</td><td class=\"peq\">%s</td></tr>" % (chip(z["nivel_txt"]), e(z["cve"]), e(z["producto"]), e(z["version"]), e(z.get("accion", ""))) for z in top)
         recientes = datos_alertas_mini(alertas)
+        if r.get("sin_datos"):
+            return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + '<div class="aviso mal"><b>SIN DATOS: no se pudo evaluar.</b> '
+                          'No se detecto ningun componente (el objetivo no respondio o no se pudo leer). Esto <b>no</b> significa que este libre de '
+                          'vulnerabilidades. Revisa la pestana Documentacion para ver el error y vuelve a analizar.</div>', "inicio")
+        if h.get("sin_respuesta"):
+            msg = ('<div class="aviso mal"><b>Resultado incompleto:</b> %s no respondio. Los datos de ese objetivo faltan; no lo des por seguro.</div>'
+                   % ", ".join("<code>%s</code>" % e(z.get("target", "")) for z in h["sin_respuesta"])) + msg
         cuerpo = (tablero.html_tablero(h) + msg + '<div class="grid" style="margin:0 -9px">%s</div><h2>Qué parchear primero</h2><table><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Acción requerida (CISA)</th></tr>%s</table>'
                   '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>%s%s' % (ks, filas, e(x["slug"]), _config(h.get("configuracion")), recientes))
     return pagina(x["entidad"], cab + _tabs(x["slug"], tab) + cuerpo, "inicio")

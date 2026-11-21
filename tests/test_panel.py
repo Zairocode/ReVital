@@ -27,6 +27,7 @@ w("hallazgos-muni-gt.json", hall)
 w("reporte-muni-gt.md", "# Reporte ReVital: MUNI-GT\n\n| A | B |\n|---|---|\n| **uno** | `dos` |\n\n- item <b>x</b>\n")
 w("inventario-web-localhost-8080.json", {"kind": "web", "target": "http://localhost:8080", "entidad": "MUNI-GT", "components": []})
 w("reporte-MUNI-GT-web-localhost-8080.md", "# colector\n")
+w("hallazgos-vacia.json", {"entidad": "VACIA", "fecha_evaluacion": "2026-11-21", "catalogos": {}, "componentes": [], "hallazgos": [], "condicionales": [], "eol": [], "sin_mapeo": []})
 w("secreto-ajeno.json", {"x": 1})  # no pertenece a la entidad: no debe ir en el zip
 
 s = socket.socket(); s.bind(("127.0.0.1", 0)); puerto = s.getsockname()[1]; s.close()
@@ -81,6 +82,25 @@ assert pedir("POST", "/analizar", "tipo=web&destino=file%3A%2F%2F%2Fetc%2Fpasswd
 assert pedir("POST", "/analizar", "tipo=web&destino=http%3A%2F%2Fa&entidad=%3Bcalc&autorizo=1")[0] == 400
 assert pedir("POST", "/analizar", "tipo=codigo&destino=C%3A%5Cno%5Cexiste&entidad=X&autorizo=1")[0] == 400
 assert pedir("GET", "/", extra={})[2].count(b"<script") == 0, "el panel no usa JavaScript"
+
+# una entidad sin ningun componente (el objetivo no respondio) NUNCA se muestra como "cumple"
+st, _, b = pedir("GET", "/e/vacia"); assert st == 200 and b"SIN DATOS" in b and b'class="estado si"' not in b and b"Cumplimiento" not in b, "no debe verse como CUMPLE ni mostrar un tablero verde"
+assert b"SIN DATOS" in pedir("GET", "/")[2]
+
+# el analisis lanzado desde la pantalla corre el cruce con KEV AUNQUE el colector falle (si no, el panel seguiria mostrando el resultado viejo)
+import time
+llamadas = []
+def falso(args, log_extra=None):
+    llamadas.append(args[0])
+    return (1, "no respondio") if args[0] == "revital.crawler" else (0, "ok")
+panel_falso = app.Panel(salida)
+panel_falso.correr = falso
+t = panel_falso.lanzar("web", "http://x.invalido", "VACIA", False)
+for _ in range(100):
+    if t["estado"] != "en curso":
+        break
+    time.sleep(0.05)
+assert llamadas == ["revital.crawler", "revital.cves"] and t["estado"] == "error", (llamadas, t["estado"])
 
 # el markdown mal formado no rompe nada
 assert "<table>" in vistas.md_a_html("| a |\n|---|\n| b |") and vistas.md_a_html("") == ""
