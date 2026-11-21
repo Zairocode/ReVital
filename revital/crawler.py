@@ -86,7 +86,8 @@ def fetch(url, ctx, allowed, timeout=15, retries=2):
             except HTTPError as e:
                 r = e
             ctype = r.headers.get("Content-Type", "")
-            ok = "html" in ctype or ctype.split(";")[0] in ("", "application/octet-stream")  # legacy mal configurado
+            ok = ("html" in ctype or "xml" in ctype or ctype.startswith("text/")
+                  or ctype.split(";")[0] in ("", "application/octet-stream"))  # legacy mal configurado
             body = r.read(2_000_000).decode("latin-1") if ok else ""  # latin-1 no falla nunca
             headers = dict(r.headers.items())
             headers["set-cookie"] = "\n".join(r.headers.get_all("Set-Cookie") or [])
@@ -138,6 +139,30 @@ def detect_tech(url, headers, page, status=200, body=""):
     return tech
 
 
+def descubrir(start, ctx, allowed, timeout):
+    """robots.txt y sitemap.xml como fuente de rutas (los Disallow suelen apuntar a /admin, /backup...).
+    -> (urls_de_sitemap, rutas_disallow)"""
+    u = urlparse(start)
+    base = "%s://%s" % (u.scheme, u.netloc)
+
+    def leer(url):
+        try:
+            st, _, body, _ = fetch(url, ctx, allowed, timeout, retries=0)
+            return body if st == 200 else ""
+        except Exception:
+            return ""
+
+    robots = leer(base + "/robots.txt")
+    disallow = sorted({m.group(1) for m in re.finditer(r"(?im)^\s*disallow:\s*(/\S*)", robots)})
+    maps = [m.group(1) for m in re.finditer(r"(?im)^\s*sitemap:\s*(\S+)", robots)] or [base + "/sitemap.xml"]
+    urls, i = [], 0
+    while i < len(maps) and i < 5:  # tope: 5 sitemaps (indices anidados incluidos)
+        for loc in re.findall(r"<loc>\s*(.*?)\s*</loc>", leer(maps[i]), re.S):
+            (maps if loc.endswith(".xml") else urls).append(loc)
+        i += 1
+    return urls[:500], disallow
+
+
 def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5):
     ctx = ssl.create_default_context()
     if insecure:  # servidores viejos: TLS 1.0, certs vencidos o autofirmados
@@ -150,6 +175,11 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
     allowed = {urlparse(start).netloc.lower()} | {h.lower() for h in scope}
     print("Recorriendo %s | hosts permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
     seen, queue, pages, tech, docs, patrones = set(), deque([start]), [], {}, set(), Counter()
+    urls_map, disallow = descubrir(start, ctx, allowed, timeout)
+    for l in urls_map + [urljoin(start, d) for d in disallow if not re.search(r"[*$?]", d)]:
+        l = normalize(l)
+        if urlparse(l).netloc.lower() in allowed:
+            queue.append(l)
     try:
         while queue and len(pages) < max_pages:
             url = queue.popleft()
@@ -192,6 +222,8 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
     inv["extra"]["pages"] = pages
     inv["extra"]["documentos"] = sorted(docs)
     inv["extra"]["hosts_permitidos"] = sorted(allowed)
+    inv["extra"]["robots_disallow"] = disallow
+    inv["extra"]["sitemap_urls"] = len(urls_map)
     return inv
 
 
@@ -202,6 +234,9 @@ def to_markdown(r):
            "| Producto | Version | Fuente | Donde |", "|---|---|---|---|"]
     out += ["| %(producto)s | %(version)s | %(fuente)s | %(donde)s |" % c for c in r["components"]]
     out += ["", "## Documentos enlazados (%d)" % len(docs), ""] + ["- " + d for d in docs]
+    if r["extra"]["robots_disallow"]:
+        out += ["", "## Rutas que robots.txt pide ocultar (%d)" % len(r["extra"]["robots_disallow"]), ""]
+        out += ["- `%s`" % d for d in r["extra"]["robots_disallow"]]
     out += ["", "## Paginas", ""]
     for p in pages:
         out.append("- `%s` -> %s %s" % (p["url"], p.get("status", "ERROR"), p.get("title") or p.get("error", "")))

@@ -135,7 +135,7 @@ Funciones disponibles: `nuevo(kind, target, entidad)`, `componente(producto, ver
 ## 7. Qué hace cada pieza
 
 ### 7.1 Colector web — rama `crawler` (`revital/crawler.py`)
-Ya existe una primera versión. Recorre las páginas del mismo dominio y detecta tecnología por:
+Ya existe. Recorre las páginas del mismo dominio y detecta tecnología por:
 - headers `Server`, `X-Powered-By`, `X-AspNet-Version`, `X-AspNetMvc-Version`;
 - `<meta name="generator">` (ej. `Joomla 1.5`);
 - nombre de los scripts (`jquery-1.4.2.min.js` → jquery 1.4.2);
@@ -143,11 +143,11 @@ Ya existe una primera versión. Recorre las páginas del mismo dominio y detecta
 
 También detecta por **cookies de sesión** (`ASPSESSIONID`, `JSESSIONID`, `PHPSESSID`), **rutas típicas** (`WebResource.axd`, `/struts/`, `/wp-content/`), **comentarios HTML** y **páginas de error** (ej. `Apache Tomcat/5.5.23` en un 404).
 
-También lista formularios y sus campos (útil para documentar la app) y los documentos enlazados (PDF, DOC, XLS…). Opciones: `--insecure` (servidores viejos con TLS 1.0 o certificados vencidos), `--entidad`, `--scope host2,host3` (hosts permitidos; no sigue redirects fuera de scope), `--timeout`, `--demo` (autoprueba sin red). Evita trampas (ids de sesión en URL, tope de 5 páginas por patrón), reintenta fallos de red y guarda lo recorrido si se interrumpe con Ctrl+C.
+También lista formularios y sus campos (útil para documentar la app) y los documentos enlazados (PDF, DOC, XLS…). Opciones: `--insecure` (servidores viejos con TLS 1.0 o certificados vencidos), `--entidad`, `--scope host2,host3` (hosts permitidos; no sigue redirects fuera de scope), `--timeout`, `--demo` (autoprueba sin red). Usa `robots.txt` (los `Disallow` suelen apuntar a `/admin`, `/backup`) y `sitemap.xml` como fuentes de rutas. Evita trampas (ids de sesión en URL, tope de 5 páginas por patrón), reintenta fallos de red y guarda lo recorrido si se interrumpe con Ctrl+C.
 
 > ✅ **Integrado al contrato:** el crawler ya usa `inventory.nuevo(...)`/`componente(...)` y escribe `salida/inventario-web.json` con `producto` y `version` separados, más `salida/reporte-<entidad>-web.md`. Pruebas: `python -m revital.crawler --demo` y `python tests/test_crawler_local.py` (sitio falso legacy local, sin internet).
 >
-> Pendiente del colector: `sitemap.xml`/`robots.txt` como fuente de rutas, charset real de las páginas, cascada de versiones TLS (con `adaptaciones-windows`), login y JavaScript.
+> Pendiente del colector: charset real de las páginas, cascada de versiones TLS (con `adaptaciones-windows`), login y JavaScript.
 
 ### 7.2 Colector de red — rama `crawler` (`revital/red.py`)
 Recorre un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
