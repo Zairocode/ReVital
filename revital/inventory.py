@@ -1,5 +1,5 @@
 """Contrato comun: todo colector (web, host, red, codigo) produce un inventario con este formato."""
-import json, os, time
+import json, os, re, time
 
 KINDS = ("web", "host", "red", "codigo")
 
@@ -16,9 +16,16 @@ def nuevo(kind, target, entidad=""):
             "components": [], "extra": {}}
 
 
+def slug(target):
+    """'http://localhost:8080/x' -> 'localhost-8080-x'; sirve para nombrar archivos por objetivo."""
+    return re.sub(r"[^a-z0-9]+", "-", target.lower().split("://")[-1]).strip("-")[:40] or "destino"
+
+
 def guardar(inv, out="salida", nombre=None):
+    """Guarda salida/inventario-<kind>-<destino>.json. Dos objetivos distintos del mismo tipo no se pisan;
+    volver a correr el mismo objetivo actualiza su archivo."""
     os.makedirs(out, exist_ok=True)
-    path = os.path.join(out, nombre or "inventario-%s.json" % inv["kind"])
+    path = os.path.join(out, nombre or "inventario-%s-%s.json" % (inv["kind"], slug(inv["target"])))
     with open(path, "w", encoding="utf-8") as f:
         json.dump(inv, f, indent=2, ensure_ascii=False)
     return path

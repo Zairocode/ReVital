@@ -6,7 +6,7 @@ Solo stdlib de Python 3.8+ (corre en Windows 7). Linux viejo: fuera de scope por
 
 ## Arquitectura
 ```
- colectores (cada uno -> salida/inventario-<kind>.json, formato en revital/inventory.py)
+ colectores (cada uno -> salida/inventario-<kind>-<destino>.json, formato en revital/inventory.py)
    web     : crawler de URL                       (rama crawler)
    red     : rango/hosts de una institución       (rama crawler)
    codigo  : carpeta de una app legacy            (rama directorios)

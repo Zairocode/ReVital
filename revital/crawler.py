@@ -1,4 +1,4 @@
-"""Colector web de ReVital: documenta una app web legacy -> inventario-web.json + reporte .md.
+"""Colector web de ReVital: documenta una app web legacy -> inventario-web-<destino>.json + reporte .md.
 
 Solo stdlib, compatible con Python 3.8+ (Windows 7 en adelante).
 Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--scope host2,host3] [--out salida]
@@ -365,7 +365,7 @@ if __name__ == "__main__":
         ap.error("falta url")
     res = crawl(a.url, a.max, a.delay, a.insecure, a.entidad, [h for h in a.scope.split(",") if h], a.timeout)
     j = inventory.guardar(res, a.out)
-    md = os.path.join(a.out, "reporte-%s-web.md" % (a.entidad or "sin-entidad"))
+    md = os.path.join(a.out, "reporte-%s-web-%s.md" % (a.entidad or "sin-entidad", inventory.slug(res["target"])))
     with open(md, "w", encoding="utf-8") as f:
         f.write(to_markdown(res))
     print("listo: %s y %s (%d componentes)" % (j, md, len(res["components"])))
