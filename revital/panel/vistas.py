@@ -6,89 +6,69 @@ from urllib.parse import quote
 from revital.panel import datos, tablero
 
 e = html.escape
-COLOR = {"CRITICO": ("#ffffff", "#e10600"), "URGENTE (vencido)": ("#ffffff", "#b30500"), "URGENTE": ("#ffffff", "#8a0400"),
-         "ALTO (exploit publico)": ("#ff6b62", "#2a0a08"), "ALTO": ("#ff8a80", "#1f0d0c"), "MEDIO": ("#e5e5e5", "#262626"), "BAJO": ("#9a9a9a", "#1a1a1a")}
-SEV_ALERTA = {"critica": ("#ffffff", "#e10600"), "alta": ("#ffffff", "#8a0400"), "media": ("#ff8a80", "#1f0d0c"), "info": ("#9a9a9a", "#1a1a1a")}
+COLOR = {"CRITICO": ("#ff6b57", "rgba(255,90,60,.16)"), "URGENTE (vencido)": ("#ff6b57", "rgba(255,90,60,.12)"),
+         "URGENTE": ("#ff8a75", "rgba(255,90,60,.10)"), "ALTO (exploit publico)": ("#ffa38f", "rgba(255,90,60,.08)"),
+         "ALTO": ("#d4d4d8", "#26262a"), "MEDIO": ("#b4b4ba", "#232326"), "BAJO": ("#8a8a8f", "#202023")}
+SEV_ALERTA = {"critica": ("#ff6b57", "rgba(255,90,60,.16)"), "alta": ("#ff8a75", "rgba(255,90,60,.10)"), "media": ("#d4d4d8", "#26262a"), "info": ("#8a8a8f", "#202023")}
 
 CSS = """
 *{box-sizing:border-box}
-body{margin:0;background:#050505;color:#f2f2f2;font:15px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
-a{color:#ffffff;text-decoration:none;font-weight:600} a:hover{color:#e10600;text-decoration:none}
-.top{background:#000;border-bottom:1px solid #1f1f1f;color:#fff;padding:0}
-.top .in{max-width:1180px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
+body{margin:0;background:#0e0e0f;color:#f2f2f2;font:15px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+a{color:#ffffff;text-decoration:none;font-weight:600} a:hover{color:#ff7a5c}
+.top{background:#0e0e0f;color:#fff;padding:0}
+.top .in{max-width:1200px;margin:0 auto;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .marca{display:flex;align-items:center;color:#fff} .marca:hover{color:#fff}
-.marca svg{margin-right:12px} .marca b{font-size:22px;letter-spacing:.3px} .marca span{display:block;font-size:11px;color:#8a8a8a;letter-spacing:.8px;text-transform:uppercase;font-weight:600}
-.nav a{color:#bdbdbd;margin-left:6px;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:.9px;text-transform:uppercase;display:inline-block;border-bottom:2px solid transparent}
-.nav a:hover{color:#fff} .nav a.act{color:#fff;border-bottom-color:#e10600}
-.wrap{max-width:1180px;margin:0 auto;padding:24px 22px}
-h1{font-size:30px;margin:4px 0 2px;font-weight:700;letter-spacing:-.3px} h3{font-size:15px;margin:0 0 6px}
-h2{font-size:13px;margin:30px 0 12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e5e5e5}
-.sub{color:#8a8a8a;margin:0 0 18px}
-.card{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:20px}
+.marca svg{margin-right:12px} .marca b{font-size:19px;font-weight:700} .marca span{display:block;font-size:12px;color:#7d7d80}
+.nav a{color:#a1a1a6;margin-left:6px;padding:9px 16px;border-radius:12px;font-weight:600;font-size:14px;display:inline-block}
+.nav a:hover{color:#fff;background:#1a1a1c} .nav a.act{color:#ff7a5c;background:#1c1c1e}
+.wrap{max-width:1200px;margin:0 auto;padding:18px 22px 24px}
+h1{font-size:26px;margin:4px 0 2px;font-weight:700} h3{font-size:16px;margin:0 0 6px;font-weight:600}
+h2{font-size:17px;margin:30px 0 12px;font-weight:600;color:#f2f2f2}
+.sub{color:#7d7d80;margin:0 0 18px;font-size:14px}
+.card{background:#1a1a1c;border-radius:20px;padding:22px}
 .grid{display:flex;flex-wrap:wrap;margin:0 -9px}
 .grid>.card,.grid>.k{margin:9px;flex:1 1 300px}
-.k{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:16px 18px;flex:1 1 150px;min-width:150px}
-.k .n{font-size:40px;font-weight:700;line-height:1.1;letter-spacing:-.5px} .k .t{color:#9a9a9a;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
-.k.mal{border-top:3px solid #e10600} .k.mal .n{color:#e10600} .k.bien{border-top:3px solid #22c55e} .k.bien .n{color:#22c55e}
-.k.med{border-top:3px solid #e10600} .k.med .n{color:#e10600} .k.neu{border-top:3px solid #3a3a3a}
-.chip{display:inline-block;border-radius:99px;padding:2px 11px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;text-transform:uppercase}
-.estado{display:inline-block;border-radius:99px;padding:5px 14px;font-weight:800;font-size:12px;letter-spacing:.9px}
-.si{background:#22c55e;color:#03140a} .no{background:#e10600;color:#fff}
-.btn{display:inline-block;background:#fff;color:#050505;border:0;border-radius:99px;padding:9px 18px;font:700 13px "Segoe UI",Arial,sans-serif;letter-spacing:.4px;cursor:pointer}
-.btn:hover{background:#e10600;color:#fff} .btn.sec{background:transparent;color:#e5e5e5;border:1px solid #3a3a3a} .btn.sec:hover{border-color:#fff;color:#fff;background:transparent}
-.tabs{border-bottom:1px solid #1f1f1f;margin:20px 0 20px} .tabs a{display:inline-block;padding:10px 16px;color:#8a8a8a;font-weight:700;font-size:12px;letter-spacing:.9px;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tabs a.act{color:#fff;border-bottom-color:#e10600} .tabs a:hover{color:#fff}
-table{width:100%;border-collapse:collapse;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;overflow:hidden;font-size:14px}
-th{background:#0d0d0d;text-align:left;padding:11px 12px;color:#8a8a8a;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;border-bottom:1px solid #1f1f1f}
-td{padding:10px 12px;border-bottom:1px solid #1a1a1a;vertical-align:top;color:#e5e5e5} tr:last-child td{border-bottom:0}
-details.h{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;margin:0 0 8px;padding:0}
-details.h summary{cursor:pointer;padding:12px 14px;list-style:none} details.h summary::-webkit-details-marker{display:none}
-details.h summary b{margin:0 8px} details.h[open]{border-color:#e10600}
-details.h .cu{padding:2px 16px 14px;color:#d4d4d4;border-top:1px solid #1a1a1a}
+.k{background:#1a1a1c;border-radius:20px;padding:18px 20px;flex:1 1 150px;min-width:150px}
+.k .n{font-size:32px;font-weight:700;line-height:1.15;color:#fff} .k .t{color:#9a9a9f;font-size:13px}
+.k.mal .n,.k.med .n{color:#ff6b57} .k.bien .n{color:#34c38f}
+.chip{display:inline-block;border-radius:8px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.estado{display:inline-block;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12px}
+.si{background:rgba(52,195,143,.14);color:#34c38f} .no{background:rgba(255,90,60,.14);color:#ff6b57}
+.btn{display:inline-block;background:#f2f2f2;color:#0e0e0f;border:0;border-radius:12px;padding:9px 16px;font:600 14px "Segoe UI",Arial,sans-serif;cursor:pointer}
+.btn:hover{background:#ffffff;color:#0e0e0f} .btn.sec{background:#262628;color:#e5e5e5} .btn.sec:hover{background:#303033;color:#fff}
+.tabs{margin:18px 0 18px;background:#1a1a1c;border-radius:14px;padding:5px;display:inline-block}
+.tabs a{display:inline-block;padding:8px 16px;color:#a1a1a6;font-weight:600;font-size:14px;border-radius:10px}
+.tabs a.act{color:#fff;background:#2a2a2d} .tabs a:hover{color:#fff}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#1a1a1c;border-radius:20px;overflow:hidden;font-size:14px;padding:10px 14px}
+th{background:#232326;text-align:left;padding:10px 12px;color:#a1a1a6;font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+th:first-child{border-radius:10px 0 0 10px} th:last-child{border-radius:0 10px 10px 0}
+td{padding:12px;border-bottom:1px solid #26262a;vertical-align:top;color:#e5e5e5} tr:last-child td{border-bottom:0}
+details.h{background:#1a1a1c;border-radius:16px;margin:0 0 10px;padding:0}
+details.h summary{cursor:pointer;padding:14px 16px;list-style:none} details.h summary::-webkit-details-marker{display:none}
+details.h summary b{margin:0 8px} details.h[open]{background:#1e1e21}
+details.h .cu{padding:4px 18px 16px;color:#d4d4d8;border-top:1px solid #2a2a2e}
 details summary{cursor:pointer}
-.cu p{margin:8px 0} .mut{color:#8a8a8a} .peq{font-size:13px}
-.aviso{background:#0d0d0d;border:1px solid #1f1f1f;border-left:4px solid #8a8a8a;border-radius:10px;padding:12px 16px;margin:0 0 16px;color:#e5e5e5}
-.aviso.mal{border-left-color:#e10600} .aviso.mal b{color:#ff3b30} .aviso.bien{border-left-color:#22c55e} .aviso.bien b{color:#22c55e}
-label{display:block;font-weight:700;margin:12px 0 5px;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:#bdbdbd}
-input[type=text],select{width:100%;padding:10px 12px;border:1px solid #2f2f2f;border-radius:10px;font:14px "Segoe UI",Arial,sans-serif;background:#000;color:#fff}
-input[type=text]:focus,select:focus{border-color:#e10600;outline:0}
+.cu p{margin:8px 0} .mut{color:#8a8a8f} .peq{font-size:13px}
+.aviso{background:#1a1a1c;border-radius:16px;padding:14px 18px;margin:0 0 16px;color:#e5e5e5}
+.aviso.mal b{color:#ff6b57} .aviso.bien b{color:#34c38f}
+label{display:block;font-weight:600;margin:12px 0 6px;font-size:13px;color:#a1a1a6}
+input[type=text],select{width:100%;padding:11px 13px;border:1px solid #2a2a2e;border-radius:12px;font:14px "Segoe UI",Arial,sans-serif;background:#111113;color:#fff}
+input[type=text]:focus,select:focus{border-color:#55555c;outline:0}
 .fila{display:flex;flex-wrap:wrap;margin:0 -8px} .fila>div{padding:0 8px;flex:1 1 220px}
-.chk{font-weight:400;display:block;margin:10px 0;text-transform:none;letter-spacing:0;font-size:14px;color:#e5e5e5} .chk input{margin-right:8px}
-pre{background:#000;color:#e5e5e5;border:1px solid #1f1f1f;border-radius:10px;padding:14px;overflow:auto;font:13px/1.45 Consolas,"Courier New",monospace}
-code{background:#1a1a1a;color:#f2f2f2;border-radius:4px;padding:1px 5px;font:13px Consolas,"Courier New",monospace}
-.md{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:14px;padding:6px 26px 20px;color:#e5e5e5}
-.md h1{font-size:24px;margin-top:18px} .md h2{font-size:13px} .md table{margin:10px 0} .md a{color:#fff;text-decoration:underline}
-.pie{color:#5a5a5a;text-align:center;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:28px 0}
-.tl{border-left:2px solid #2f2f2f;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
-@media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:24px}}
+.chk{font-weight:400;display:block;margin:10px 0;font-size:14px;color:#d4d4d8} .chk input{margin-right:8px}
+pre{background:#111113;color:#e5e5e5;border-radius:12px;padding:14px;overflow:auto;font:13px/1.45 Consolas,"Courier New",monospace}
+code{background:#26262a;color:#f2f2f2;border-radius:6px;padding:1px 6px;font:13px Consolas,"Courier New",monospace}
+.md{background:#1a1a1c;border-radius:20px;padding:8px 28px 22px;color:#e5e5e5}
+.md h1{font-size:24px;margin-top:18px} .md table{margin:10px 0;background:#141416} .md a{color:#fff;text-decoration:underline}
+.pie{color:#5a5a5f;text-align:center;font-size:12px;padding:26px 0}
+.tl{border-left:2px solid #2a2a2e;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
+@media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:22px}}
 @media print{.top,.tabs,.btn,.nav,.pie{display:none} body{background:#fff;color:#000}}
-/* tarjetas HUD: rojo = vulnerable, verde = correcto, gris = neutro */
-body{background-color:#05070a;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:34px 34px}
-.top{background:#000}
-.card,.k,details.h,.md,.aviso{position:relative;border:1px solid #2c2c2c;border-radius:4px;background:#0b0c0f;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
-.card:before,.k:before,details.h:before,.md:before,.aviso:before{content:"";position:absolute;top:-1px;right:-1px;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #5a5a5a transparent transparent}
-.card:after,.k:after,details.h:after,.md:after,.aviso:after{content:"";position:absolute;bottom:-1px;left:-1px;border-style:solid;border-width:16px 0 0 16px;border-color:transparent transparent transparent #5a5a5a}
-.card.mal,.k.mal,.k.med,details.h,.aviso.mal{border-color:rgba(225,6,0,.65);background:#140405;background:linear-gradient(135deg,rgba(225,6,0,.22),rgba(225,6,0,.04))}
-.card.mal:before,.k.mal:before,.k.med:before,details.h:before,.aviso.mal:before{border-right-color:#e10600}
-.card.mal:after,.k.mal:after,.k.med:after,details.h:after,.aviso.mal:after{border-left-color:#e10600}
-.card.bien,.k.bien,.aviso.bien{border-color:rgba(34,197,94,.6);background:#04120a;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.04))}
-.card.bien:before,.k.bien:before,.aviso.bien:before{border-right-color:#22c55e}
-.card.bien:after,.k.bien:after,.aviso.bien:after{border-left-color:#22c55e}
-.k{border-top-width:1px} .aviso{border-left-width:1px}
-.card.mal h3{color:#ff3b30} .card.bien h3{color:#22c55e}
-details.h[open]{border-color:#e10600;background:#1a0506;background:linear-gradient(135deg,rgba(225,6,0,.3),rgba(225,6,0,.06))}
-details.h .cu{border-top-color:rgba(225,6,0,.3)}
-table{border-color:rgba(225,6,0,.45);border-radius:4px;background:#0b0c0f;background:linear-gradient(135deg,rgba(225,6,0,.1),rgba(255,255,255,.015))}
-th{background:rgba(225,6,0,.12);color:#ff6b62;border-bottom-color:rgba(225,6,0,.35)}
-td{border-bottom-color:rgba(255,255,255,.06)}
-.btn{border-radius:3px} .btn.sec{border-radius:3px} .estado,.chip{border-radius:3px}
-pre{border-color:rgba(225,6,0,.35);border-radius:3px}
-input[type=text],select{border-radius:3px}
 """
 
-LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c0 9-6 15-14 18C11 33 5 27 5 18V7Z" fill="#ffffff"/>'
-        '<path d="M19 6 29 9.500V18c0 6.500-4 11-10 13.500C13 29 9 24.500 9 18V9.500Z" fill="#050505"/>'
-        '<path d="M13.500 18.500 17.500 22.500 25 14" stroke="#22c55e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c0 9-6 15-14 18C11 33 5 27 5 18V7Z" fill="#ff5a3c"/>'
+        '<path d="M19 6 29 9.500V18c0 6.500-4 11-10 13.500C13 29 9 24.500 9 18V9.500Z" fill="#0e0e0f"/>'
+        '<path d="M13.500 18.500 17.500 22.500 25 14" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
 
 
 def pagina(titulo, cuerpo, activo="inicio"):
@@ -103,12 +83,12 @@ def pagina(titulo, cuerpo, activo="inicio"):
 
 
 def chip(nivel):
-    fg, bg = COLOR.get(nivel, ("#9a9a9a", "#1a1a1a"))
+    fg, bg = COLOR.get(nivel, ("#8a8a8f", "#202023"))
     return '<span class="chip" style="color:%s;background:%s">%s</span>' % (fg, bg, e(nivel))
 
 
 def chip_sev(sev):
-    fg, bg = SEV_ALERTA.get(sev, ("#9a9a9a", "#1a1a1a"))
+    fg, bg = SEV_ALERTA.get(sev, ("#8a8a8f", "#202023"))
     return '<span class="chip" style="color:%s;background:%s">%s</span>' % (fg, bg, e(sev))
 
 
@@ -148,7 +128,7 @@ def inicio(ents, alertas, estado_s, mensaje=""):
                      '<div style="padding:0 4px"><div style="font-size:26px;font-weight:800">%d</div><div class="mut peq">componentes</div></div></div>'
                      '<a class="btn" href="/e/%s">Abrir</a> <a class="btn sec" href="/zip/%s">Descargar documentación</a></div>'
                      % ("bien" if r["cumple"] else "mal", e(x["entidad"]), estado_chip(r["cumple"], r.get("sin_datos")), e(x["h"].get("fecha_evaluacion", "")),
-                        e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#e10600" if r["kev"] else "#22c55e",
+                        e(x["h"].get("catalogos", {}).get("kev_version", "?")), "#ff6b57" if r["kev"] else "#34c38f",
                         r["kev"], r["ransomware"], r["componentes"], e(x["slug"]), e(x["slug"])))
         b.append("</div>")
     b.append("<h2>Nuevo análisis</h2>" + form_analisis())
@@ -174,8 +154,8 @@ def _tabs(slug, tab):
 
 def _hallazgo(x, abierto=False):
     ev = "".join("<li><code>%s</code> · %s · %s</li>" % (e(v.get("donde", "")), e(v.get("fuente", "")), e(v.get("kind", ""))) for v in x.get("evidencia", [])[:6])
-    kev = ('<span class="chip" style="color:#fff;background:#e10600">EN KEV</span> ' if x.get("en_kev") else "")
-    rw = ('<span class="chip" style="color:#ff6b62;background:#2a0a08">ransomware</span> ' if x.get("ransomware") == "Known" else "")
+    kev = ('<span class="chip" style="color:#ff6b57;background:rgba(255,90,60,.16)">EN KEV</span> ' if x.get("en_kev") else "")
+    rw = ('<span class="chip" style="color:#ff8a75;background:rgba(255,90,60,.10)">ransomware</span> ' if x.get("ransomware") == "Known" else "")
     extra = ""
     if x.get("en_kev"):
         extra = '<p><b>Qué hacer (CISA):</b> %s<br><span class="mut">Fecha límite de CISA: %s%s · en KEV desde %s</span></p>' % (
@@ -238,8 +218,8 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro=""):
         filas = ""
         for c in sorted(h.get("componentes", []), key=lambda z: z["producto"].lower()):
             k = c["producto"] + "|" + c["version"]
-            marca = ('<span class="chip" style="color:#ff6b62;background:#2a0a08">fuera de soporte</span> ' if k in eol else "") + \
-                    ('<span class="chip" style="color:#9a9a9a;background:#1a1a1a">sin catálogo</span>' if k in sin else "")
+            marca = ('<span class="chip" style="color:#ff8a75;background:rgba(255,90,60,.10)">fuera de soporte</span> ' if k in eol else "") + \
+                    ('<span class="chip" style="color:#8a8a8f;background:#202023">sin catálogo</span>' if k in sin else "")
             ev = "".join("<li><code>%s</code> · %s</li>" % (e(v.get("donde", "")), e(v.get("fuente", ""))) for v in c.get("evidencia", [])[:8])
             filas += ("<tr><td><b>%s</b><br><span class=\"mut peq\">detectado como: %s</span></td><td>%s</td><td>%s</td>"
                       "<td><details><summary class=\"peq\">%d evidencia(s)</summary><ul class=\"peq\">%s</ul></details></td></tr>"
@@ -308,7 +288,7 @@ def sentinela(estado_s, alertas, config_ejemplo):
         if objs:
             b.append("<h2>Qué vigila</h2><table><tr><th>Entidad</th><th>Tipo</th><th>Destino</th><th>Última vez</th></tr>%s</table>" % "".join(
                 "<tr><td>%s</td><td>%s</td><td><code>%s</code></td><td>%s</td></tr>" % (e(o.get("entidad", "")), e(o.get("tipo", "")), e(o.get("destino", "")),
-                                                                                         "OK" if o.get("ok") else "<span style=\"color:#e10600\"><b>falló</b> %s</span>" % e(o.get("detalle", ""))) for o in objs))
+                                                                                         "OK" if o.get("ok") else "<span style=\"color:#ff6b57\"><b>falló</b> %s</span>" % e(o.get("detalle", ""))) for o in objs))
     else:
         b = ['<div class="aviso"><b>El sentinela todavía no se ha ejecutado.</b> Vigila en segundo plano y avisa cuando algo cambia.</div>']
     b.append('<h2>Alertas</h2>' + ('<div class="tl">%s</div>' % _lista_alertas(alertas) if alertas else '<p class="mut">Sin alertas todavía.</p>'))
