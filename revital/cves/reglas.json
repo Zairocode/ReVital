@@ -1,0 +1,11 @@
+{
+  "_nota": "Reglas propias de ReVital que NVD/KEV no traen. 'condicionales': el CVE solo aplica si se cumple una configuracion que no se ve desde fuera; se reporta aparte como 'verificar', no como confirmado. 'umbral_alto' y 'umbral_medio' son cortes de CVSS para lo que no esta en KEV.",
+  "condicionales": {
+    "CVE-2024-38475": "Solo si el servidor usa reglas RewriteRule de mod_rewrite que sustituyen con rutas del sistema de archivos. Revisar la configuracion de Apache.",
+    "CVE-2019-6340": "Solo si el modulo RESTful Web Services esta activo y acepta PATCH/POST.",
+    "CVE-2019-11043": "Solo con PHP-FPM detras de nginx con cierta configuracion de fastcgi_split_path_info."
+  },
+  "umbral_alto": 9.0,
+  "umbral_medio": 7.0,
+  "max_no_kev_en_reporte": 20
+}

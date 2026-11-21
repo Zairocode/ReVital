@@ -1,0 +1,47 @@
+{
+  "generado": "2026-11-21 10:45:00",
+  "fuente": "EJEMPLO ReVital: rangos y CVSS v3.1 copiados del API 2.0 de NVD el 2026-11-21 (descripciones resumidas en espanol). Para el extracto real: python -m revital.cves --actualizar",
+  "cves": {
+    "CVE-2018-7600": {
+      "descripcion": "Drupalgeddon 2: Drupal antes de 7.58 y ciertas 8.x permite ejecucion remota de codigo sin autenticacion por manejo inseguro de arrays de formularios.",
+      "cvss": 9.8, "severidad": "CRITICAL",
+      "afecta": [
+        {"cpe": "drupal:drupal", "hasta_incl": "7.57"},
+        {"cpe": "drupal:drupal", "desde_incl": "8.0.0", "hasta_excl": "8.3.9"},
+        {"cpe": "drupal:drupal", "desde_incl": "8.4.0", "hasta_excl": "8.4.6"},
+        {"cpe": "drupal:drupal", "desde_incl": "8.5.0", "hasta_excl": "8.5.1"}
+      ]
+    },
+    "CVE-2019-6340": {
+      "descripcion": "Drupal 8.5.x y 8.6.x: ejecucion remota de codigo por deserializacion en RESTful Web Services.",
+      "cvss": 8.1, "severidad": "HIGH",
+      "afecta": [
+        {"cpe": "drupal:drupal", "desde_incl": "8.5.0", "hasta_excl": "8.5.11"},
+        {"cpe": "drupal:drupal", "desde_incl": "8.6.0", "hasta_excl": "8.6.10"}
+      ]
+    },
+    "CVE-2021-41773": {
+      "descripcion": "Apache HTTP Server 2.4.49: path traversal en la normalizacion de rutas; lectura de archivos fuera de la raiz y ejecucion de codigo si CGI esta activo.",
+      "cvss": 9.8, "severidad": "CRITICAL",
+      "afecta": [{"cpe": "apache:http_server", "version": "2.4.49"}]
+    },
+    "CVE-2021-42013": {
+      "descripcion": "Apache HTTP Server 2.4.49 y 2.4.50: el arreglo de CVE-2021-41773 fue insuficiente; path traversal y ejecucion remota de codigo.",
+      "cvss": 9.8, "severidad": "CRITICAL",
+      "afecta": [
+        {"cpe": "apache:http_server", "version": "2.4.49"},
+        {"cpe": "apache:http_server", "version": "2.4.50"}
+      ]
+    },
+    "CVE-2024-38475": {
+      "descripcion": "Apache HTTP Server 2.4.59 y anteriores: escape incorrecto en mod_rewrite permite mapear URLs a archivos del servidor no previstos.",
+      "cvss": 9.1, "severidad": "CRITICAL",
+      "afecta": [{"cpe": "apache:http_server", "desde_incl": "2.4.0", "hasta_excl": "2.4.60"}]
+    },
+    "CVE-2010-20103": {
+      "descripcion": "ProFTPD 1.3.3c: el codigo fuente oficial se distribuyo con una puerta trasera que da ejecucion de comandos como root sin autenticacion.",
+      "cvss": 9.8, "severidad": "CRITICAL",
+      "afecta": [{"cpe": "proftpd:proftpd", "version": "1.3.3c"}]
+    }
+  }
+}

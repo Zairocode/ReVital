@@ -1,0 +1,95 @@
+{
+  "_nota": "Traduce el 'producto' que escriben los colectores al nombre oficial de NVD (CPE vendor:product). 'nombres' se comparan en minusculas, con '-' y '_' como espacio. 'eol' = ramas sin soporte del fabricante (fecha de fin). Agregar productos aqui; no hace falta tocar codigo.",
+  "productos": {
+    "Apache HTTP Server": {
+      "cpe": ["apache:http_server"],
+      "nombres": ["apache", "apache http_server", "apache http server", "apache httpd", "httpd", "apache2"],
+      "eol": {"2.0": "2013-07-10", "2.2": "2017-07-11"}
+    },
+    "Apache Tomcat": {
+      "cpe": ["apache:tomcat"],
+      "nombres": ["apache tomcat", "tomcat", "apache coyote"],
+      "eol": {"5.5": "2012-09-30", "6": "2016-12-31", "7": "2021-03-31", "8.0": "2018-06-30", "8.5": "2024-03-31"}
+    },
+    "Apache Struts": {
+      "cpe": ["apache:struts"],
+      "nombres": ["apache struts", "struts", "java struts", "struts2 core"],
+      "eol": {"1": "2013-04-05"}
+    },
+    "Apache Log4j": {
+      "cpe": ["apache:log4j"],
+      "nombres": ["log4j", "log4j core", "apache log4j"],
+      "eol": {"1": "2015-08-05"}
+    },
+    "Drupal": {
+      "cpe": ["drupal:drupal"],
+      "nombres": ["drupal", "drupal core"],
+      "eol": {"6": "2016-02-24", "7": "2025-01-05", "8": "2021-11-02", "9": "2023-11-01"}
+    },
+    "WordPress": {
+      "cpe": ["wordpress:wordpress"],
+      "nombres": ["wordpress"],
+      "eol": {}
+    },
+    "Joomla": {
+      "cpe": ["joomla:joomla\\!"],
+      "nombres": ["joomla", "joomla!"],
+      "eol": {"1.5": "2012-12-31", "2.5": "2014-12-31", "3": "2023-08-17"}
+    },
+    "PHP": {
+      "cpe": ["php:php"],
+      "nombres": ["php"],
+      "eol": {"5": "2018-12-31", "7.0": "2019-01-10", "7.1": "2019-12-01", "7.2": "2020-11-30", "7.3": "2021-12-06", "7.4": "2022-11-28", "8.0": "2023-11-26", "8.1": "2025-12-31"}
+    },
+    "MariaDB": {
+      "cpe": ["mariadb:mariadb"],
+      "nombres": ["mariadb"],
+      "eol": {"10.3": "2023-05-25", "10.4": "2024-06-18", "10.5": "2025-06-24"}
+    },
+    "MySQL": {
+      "cpe": ["oracle:mysql"],
+      "nombres": ["mysql", "oracle mysql"],
+      "eol": {"5.6": "2021-02-01", "5.7": "2023-10-31"}
+    },
+    "Microsoft IIS": {
+      "cpe": ["microsoft:internet_information_services", "microsoft:iis"],
+      "nombres": ["microsoft iis", "iis", "internet information services"],
+      "eol": {"5": "2010-07-13", "6": "2015-07-14", "7": "2020-01-14"}
+    },
+    "nginx": {
+      "cpe": ["f5:nginx", "nginx:nginx"],
+      "nombres": ["nginx"],
+      "eol": {}
+    },
+    "OpenSSL": {
+      "cpe": ["openssl:openssl"],
+      "nombres": ["openssl"],
+      "eol": {"0.9.8": "2015-12-31", "1.0.1": "2016-12-31", "1.0.2": "2019-12-31", "1.1.0": "2019-09-11", "1.1.1": "2023-09-11"}
+    },
+    "jQuery": {
+      "cpe": ["jquery:jquery"],
+      "nombres": ["jquery"],
+      "eol": {}
+    },
+    "ProFTPD": {
+      "cpe": ["proftpd:proftpd"],
+      "nombres": ["proftpd"],
+      "eol": {}
+    },
+    "Adobe ColdFusion": {
+      "cpe": ["adobe:coldfusion"],
+      "nombres": ["coldfusion", "adobe coldfusion"],
+      "eol": {}
+    },
+    "Microsoft SharePoint": {
+      "cpe": ["microsoft:sharepoint_server"],
+      "nombres": ["sharepoint", "microsoft sharepoint", "sharepoint server"],
+      "eol": {"2010": "2021-04-13", "2013": "2023-04-11"}
+    },
+    "Spring Framework": {
+      "cpe": ["vmware:spring_framework"],
+      "nombres": ["spring framework", "spring core", "spring webmvc"],
+      "eol": {}
+    }
+  }
+}
