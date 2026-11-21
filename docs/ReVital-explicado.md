@@ -198,8 +198,12 @@ Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid
 
 > **Nombres de producto:** el crawler emite los nombres tal como los ve (`Apache`, `Drupal`, `PHP`, `Microsoft-IIS`). El cruce con NVD/CPE (`apache http_server`, `drupal`, `php`) necesita la **tabla de alias** de §7.5; hay que acordarla entre `crawler` y `reglas-cisa-cves`.
 
-### 7.2 Colector de red — rama `crawler` (`revital/red.py`) — ⏳ por hacer
-Recorrerá un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
+### 7.2 Colector de red — `revital/red.py` — ✅ PoC funcionando
+`python -m revital.red 192.168.1.0/24 --entidad X --autorizo` responde "qué hay en mi red": para cada IP prueba una lista corta de puertos con una conexión TCP normal y lee el **banner** que el servicio anuncia (SSH, FTP, SMTP, MySQL, `Server:` de HTTP…) para sacar programa y versión. Produce `inventario-red-<rango>.json` y `reporte-<entidad>-red-<rango>.md`; `revital.cves` los cruza con KEV igual que a los demás (ProFTPD 1.3.5, Exim 4.69, Apache 2.2.15…).
+- **Solo conecta y lee:** sin exploits, sin contraseñas, sin escaneo SYN ni privilegios. Identifica por el *contenido* del banner, no por el número de puerto; un puerto abierto que no dice nada se reporta como "desconocido" sin inventar un programa.
+- **Alertas** de servicios que no deberían estar abiertos a toda una red: Telnet, FTP, bases de datos (MySQL, SQL Server, Oracle, PostgreSQL, MongoDB), Redis, Memcached, VNC, SMB, RDP.
+- **Seguridad del propio escáner:** exige `--autorizo` (sin él no envía ningún paquete); por defecto solo redes privadas o locales (`--permitir-publico` para otras); máximo 256 equipos (`--max-hosts`); pocas conexiones a la vez (`--hilos`, `--pausa`) para no saturar equipos viejos.
+- **Límites del PoC:** solo IPv4, puertos TCP comunes, sin descubrimiento por ping ni nombres de equipo (DNS inverso), y el cruce depende de que el programa esté en `alias.json` (se agregaron OpenSSH, Exim, Samba, Redis y BIND). Prueba: `tests/test_red.py` (servidores falsos locales).
 
 ### 7.3 Colector de código/carpeta — rama `directorios` (`revital/codigo.py`) — ✅ funcionando
 `python -m revital.codigo RUTA_APP --entidad X` recorre la carpeta de una app legacy y lee los archivos que **declaran** versiones (solo lectura, ignora `node_modules`):

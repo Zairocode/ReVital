@@ -72,7 +72,7 @@
     <div class="item" style="border-left-color:var(--web)"><span class="tag">crawler</span><b>Web / crawler</b> <span class="est ok">✔ listo</span><br><small>Headers, cookies, rutas, errores, CMS exacto (Drupal/WP/Joomla), proxy tras backend, PDF/DOCX, robots/sitemap, TLS 1.0 obsoleto. Scope y anti-trampas; <code>--insecure</code>.</small></div>
     <div class="item" style="border-left-color:var(--cod)"><span class="tag">directorios</span><b>Código / carpeta</b> <span class="est ok">✔ listo</span><br><small><code>web.config</code>, <code>pom.xml</code>, composer/npm/NuGet, DLL/JAR, jQuery, versión de Drupal/WP.</small></div>
     <div class="item" style="border-left-color:var(--host)"><span class="tag">host</span><b>Equipo Windows local</b> <span class="est ok">✔ listo</span><br><small>Registro: Windows, IIS, .NET, IE, programas, parches y puertos. Alerta SMBv1, RDP, sin soporte. <code>.bat</code> de doble clic.</small></div>
-    <div class="item" style="border-left-color:#94a3b8"><span class="tag">crawler</span><b>Red institucional</b> <span class="est pend">pendiente</span><br><small>Rango/hosts y banners (<code>red.py</code>).</small></div>
+    <div class="item" style="border-left-color:#94a3b8"><span class="tag">red</span><b>Red institucional</b> <span class="est ok">✔ PoC</span><br><small>Rango de IP: qué servicios hay y qué programa y versión (lee banners). Solo con <code>--autorizo</code>.</small></div>
   </div>
   <div>
     <div class="json"><i>salida/inventario-&lt;kind&gt;-&lt;destino&gt;.json</i>
@@ -113,9 +113,9 @@
       <tr><td><b>Evaluación KEV/NVD + reporte final</b> (parche, mitigación, WAF)</td><td><code>main</code> · <code>revital/cves/</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
       <tr><td><b>Panel</b> (ver/descargar) + <b>Sentinela</b> (vigila y avisa)</td><td><code>main</code> · <code>panel/</code>, <code>sentinela.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
       <tr><td><b>Objetivo de demo</b> Drupal 7.57 + Apache 2.4.49 (Docker)</td><td><code>main</code> · <code>casos/portal-muni-gt/</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
-      <tr><td><b>Colector de red</b></td><td><code>revital/red.py</code></td><td><span class="badge b-pend">PEND</span></td></tr>
+      <tr><td><b>Colector de red</b> (PoC: banners de servicios)</td><td><code>main</code> · <code>red.py</code></td><td><span class="badge b-ok">OK listo</span></td></tr>
     </table>
-    <small style="color:var(--mut)">Flujo: ramas cortas, PR a <code>main</code>. 9 archivos de pruebas, todos pasan en Python 3.8 + OpenSSL 1.1.1. Linux viejo fuera de scope. Solo sistemas autorizados.</small>
+    <small style="color:var(--mut)">Flujo: ramas cortas, PR a <code>main</code>. 10 archivos de pruebas, todos pasan en Python 3.8 + OpenSSL 1.1.1. Linux viejo fuera de scope. Solo sistemas autorizados.</small>
   </div>
   <div>
     <h2><span>3</span>Demo real y criterios del Track 03</h2>
