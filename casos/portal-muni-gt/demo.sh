@@ -2,12 +2,14 @@
 # Demo de ReVital frente al publico (caso MUNI-GT). Correr desde cualquier carpeta.
 #
 #   bash casos/portal-muni-gt/demo.sh preparar    # ANTES de presentar: verifica, limpia, analiza todo y toma la linea base (FTP apagado)
-#   bash casos/portal-muni-gt/demo.sh panel       # abre el panel (dejarlo corriendo en otra terminal)
+#   bash casos/portal-muni-gt/demo.sh panel       # abre el panel (dejarlo corriendo en otra terminal); por SSH muestra el tunel
 #   bash casos/portal-muni-gt/demo.sh cambio      # EN ESCENA: enciende el FTP y el sentinela da la alerta
 #   bash casos/portal-muni-gt/demo.sh reiniciar   # despues: apaga el FTP y deja todo listo para otra presentacion
 #   bash casos/portal-muni-gt/demo.sh estado      # que esta arriba y que no
 #
-# Variables: DEMO_IP (por defecto la IP de Tailscale del equipo del demo) y DEMO_PORTAL.
+# Variables: DEMO_IP (por defecto la IP de Tailscale del equipo del demo), DEMO_PORTAL y DEMO_USUARIO (para el tunel SSH).
+# Si presentas desde OTRO equipo conectado por SSH: el panel solo escucha en 127.0.0.1 de este equipo; en tu equipo abre
+#   ssh -N -L 8765:127.0.0.1:8765 <usuario>@<IP>     y en tu navegador  http://127.0.0.1:8765
 # Solo contra el stack propio del caso (muni FICTICIA). No explota nada: solo detecta.
 set -u
 AQUI="$(cd "$(dirname "$0")" && pwd)"
@@ -17,6 +19,8 @@ IP="${DEMO_IP:-100.91.166.18}"
 PORTAL="${DEMO_PORTAL:-http://$IP:8088}"
 SAL="$RAIZ/salida/demo"
 ENT="MUNI-GT"
+USUARIO="${DEMO_USUARIO:-$(id -un)}"
+TUNEL="ssh -N -L 8765:127.0.0.1:8765 $USUARIO@$IP"
 PY="$(command -v python3 || command -v python)"
 
 b() { printf '\n\033[1m%s\033[0m\n' "$*"; }
@@ -39,6 +43,7 @@ enlaces() {
   echo "  Ventanilla de tramites .... $PORTAL/#tramites   (ej. finca F-1024)"
   echo "  SIREC operadores .......... $PORTAL/sirec/login.action"
   echo "  Panel de ReVital .......... http://127.0.0.1:8765   (bash $0 panel)"
+  [ -n "${SSH_CONNECTION:-}" ] && echo "    desde tu equipo (otra terminal, dejarla abierta):  $TUNEL"
 }
 
 estado() {
@@ -110,7 +115,18 @@ reiniciar() {
 
 case "${1:-}" in
   preparar) preparar ;;
-  panel) cd "$RAIZ" && mkdir -p "$SAL" && config_red && exec "$PY" -m revital.panel --salida "$SAL" --config "$SAL/sentinela-cambio.json" --abrir ;;
+  panel)
+    cd "$RAIZ" && mkdir -p "$SAL" && config_red
+    if ss -ltn 2>/dev/null | grep -q ':8765 '; then ok "el panel ya esta abierto en http://127.0.0.1:8765"; exit 0; fi
+    abrir="--abrir"
+    if [ -n "${SSH_CONNECTION:-}" ] || [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then  # por SSH: el navegador esta en tu otro equipo
+      abrir=""
+      b "Panel en este equipo, solo en 127.0.0.1:8765. Para verlo desde tu equipo:"
+      echo "  1) en tu equipo, otra terminal (dejarla abierta):  $TUNEL"
+      echo "  2) en tu navegador:                                http://127.0.0.1:8765"
+      echo "  (Ctrl+C aqui cierra el panel)"
+    fi
+    exec "$PY" -m revital.panel --salida "$SAL" --config "$SAL/sentinela-cambio.json" $abrir ;;
   cambio) cambio ;;
   reiniciar) reiniciar ;;
   estado) estado; enlaces ;;
