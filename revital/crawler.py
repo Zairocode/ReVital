@@ -4,7 +4,7 @@ Solo stdlib, compatible con Python 3.8+ (Windows 7 en adelante).
 Uso: python -m revital.crawler https://app.interna.gob [--max 200] [--delay 0.5] [--insecure] [--entidad X] [--scope host2,host3] [--out salida]
 Solo contra sistemas propios o con autorizacion.
 """
-import argparse, io, os, re, ssl, sys, time, zipfile
+import argparse, io, os, re, socket, ssl, sys, time, zipfile
 from collections import Counter, deque
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse, urldefrag, urlunparse
@@ -229,14 +229,47 @@ def descubrir(start, ctx, allowed, timeout):
     return urls[:500], disallow
 
 
-def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5, max_docs=20):
+TLS_VERSIONES = (("TLSv1.3", "TLSv1_3"), ("TLSv1.2", "TLSv1_2"), ("TLSv1.1", "TLSv1_1"), ("TLSv1.0", "TLSv1"))
+TLS_OBSOLETAS = ("TLSv1.1", "TLSv1.0")
+
+
+def contexto_tls(insecure):
+    """Contexto normal; con insecure acepta certificados malos y baja hasta TLS 1.0 (Python moderno exige >= 1.2 por defecto)."""
     ctx = ssl.create_default_context()
-    if insecure:  # servidores viejos: TLS 1.0, certs vencidos o autofirmados
+    if insecure:
         ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
         try:
             ctx.set_ciphers("ALL:@SECLEVEL=0")
-        except ssl.SSLError:
+            ctx.minimum_version = ssl.TLSVersion.TLSv1
+        except (ssl.SSLError, ValueError, AttributeError):  # build sin soporte de protocolos viejos: se queda con lo que haya
             pass
+    return ctx
+
+
+def sondear_tls(host, port, timeout=5):
+    """Prueba cada version de TLS por separado. -> {version: cifrado} de las que el SERVIDOR acepta.
+    Un servidor que todavia acepta TLS 1.0/1.1 es un hallazgo en si mismo."""
+    aceptadas = {}
+    for nombre, attr in TLS_VERSIONES:
+        try:
+            v = getattr(ssl.TLSVersion, attr)
+            c = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            c.check_hostname, c.verify_mode = False, ssl.CERT_NONE
+            c.minimum_version = c.maximum_version = v
+            try:
+                c.set_ciphers("ALL:@SECLEVEL=0")
+            except ssl.SSLError:
+                pass
+            with socket.create_connection((host, port), timeout=timeout) as s:
+                with c.wrap_socket(s, server_hostname=host) as t:
+                    aceptadas[nombre] = t.cipher()[0]
+        except (ssl.SSLError, OSError, ValueError, AttributeError):
+            pass  # no la acepta el servidor, o este Python no sabe hablarla
+    return aceptadas
+
+
+def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(), timeout=15, per_pattern=5, max_docs=20):
+    ctx = contexto_tls(insecure)
     start = normalize(start)
     allowed = {urlparse(start).netloc.lower()} | {h.lower() for h in scope}
     print("Recorriendo %s | hosts permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
@@ -293,8 +326,17 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
             continue
         for prod, ver in meta_documento(raw, d):
             tech.setdefault((prod, ver, "metadato de documento"), d)
+    tls = {}
+    u = urlparse(start)
+    if u.scheme == "https":
+        host, _, port = u.netloc.partition(":")
+        tls = sondear_tls(host, int(port or 443), min(timeout, 5))
+        for ver in TLS_OBSOLETAS:
+            if ver in tls:  # no es una version de software, pero es un hallazgo: protocolo obsoleto activo en el servidor
+                tech.setdefault(("TLS", ver.replace("TLSv", ""), "protocolo obsoleto aceptado por el servidor"), u.netloc)
     inv = inventory.nuevo("web", start, entidad)
     inv["components"] = [inventory.componente(p, v, f, d) for (p, v, f), d in sorted(tech.items())]
+    inv["extra"]["tls"] = {"aceptadas": tls, "obsoletas": [v for v in TLS_OBSOLETAS if v in tls]}
     inv["extra"]["pages"] = pages
     inv["extra"]["documentos"] = sorted(docs)
     inv["extra"]["hosts_permitidos"] = sorted(allowed)
@@ -309,6 +351,10 @@ def to_markdown(r):
            "Generado: %s" % r["generado"], "Paginas: %d" % len(pages), "", "## Componentes", "",
            "| Producto | Version | Fuente | Donde |", "|---|---|---|---|"]
     out += ["| %(producto)s | %(version)s | %(fuente)s | %(donde)s |" % c for c in r["components"]]
+    tls = r["extra"].get("tls", {})
+    if tls.get("aceptadas"):
+        out += ["", "## Protocolos TLS que acepta el servidor", ""]
+        out += ["- %s (%s)%s" % (v, c, "  **OBSOLETO**" if v in tls["obsoletas"] else "") for v, c in tls["aceptadas"].items()]
     out += ["", "## Documentos enlazados (%d)" % len(docs), ""] + ["- " + d for d in docs]
     if r["extra"]["robots_disallow"]:
         out += ["", "## Rutas que robots.txt pide ocultar (%d)" % len(r["extra"]["robots_disallow"]), ""]
