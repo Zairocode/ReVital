@@ -215,7 +215,7 @@ def crear(salida="salida", puerto=8765, config="sentinela.json"):
                 if tipo == "codigo" and not os.path.isdir(destino):
                     return self._err(400, "La carpeta no existe en este equipo: %s" % destino)
                 panel.lanzar(tipo, destino, ent, bool(campo("insecure")))
-                return self._redir("/?e=%s" % (inventory.slug(ent) or ""))
+                return self._redir("/?e=%s#tablero" % (inventory.slug(ent) or ""))
             if ruta == "/demo":
                 rc, out = panel.correr(["revital.cves", "--demo", "--out", panel.salida])
                 return self._redir("/?msg=" + ("Demostración cargada." if rc == 0 else "No se pudo cargar la demostración."))

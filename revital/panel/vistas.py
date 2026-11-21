@@ -3,7 +3,7 @@ en navegadores viejos y sin conexion."""
 import html, re
 from urllib.parse import quote
 
-from revital.panel import datos, tablero
+from revital.panel import cubos, datos, tablero
 
 e = html.escape
 COLOR = {"CRITICO": ("#ff6b57", "rgba(255,90,60,.16)"), "URGENTE (vencido)": ("#ff6b57", "rgba(255,90,60,.12)"),
@@ -63,11 +63,6 @@ code{background:#26262a;color:#f2f2f2;border-radius:6px;padding:1px 6px;font:13p
 .pie{color:#5a5a5f;text-align:center;font-size:12px;padding:26px 0}
 .tl{border-left:2px solid #2a2a2e;margin:6px 0 6px 8px;padding:0 0 0 16px} .tl .ev{margin:0 0 12px}
 @media (max-width:640px){.nav a{margin:4px 4px 0 0} h1{font-size:22px}}
-@font-face{font-family:"Instrument Sans";font-weight:400;font-display:swap;src:url(/static/instrument-sans-latin-400-normal.woff2) format("woff2")}
-@font-face{font-family:"Instrument Sans";font-weight:500;font-display:swap;src:url(/static/instrument-sans-latin-500-normal.woff2) format("woff2")}
-@font-face{font-family:"Instrument Sans";font-weight:600;font-display:swap;src:url(/static/instrument-sans-latin-600-normal.woff2) format("woff2")}
-@font-face{font-family:"Instrument Sans";font-weight:700;font-display:swap;src:url(/static/instrument-sans-latin-700-normal.woff2) format("woff2")}
-body,.btn,input[type=text],select,.tb{font-family:"Instrument Sans","Segoe UI",system-ui,Arial,sans-serif}
 .hero{text-align:center;padding:26px 0 8px}
 .hero .llaves{display:inline-flex;align-items:center;color:#cfcab4;font-size:15px;line-height:1.35}
 .hero .llaves span{font-size:44px;font-weight:300;color:#8a8672;margin:0 14px;line-height:1}
@@ -107,12 +102,18 @@ body,.btn,input[type=text],select,.tb{font-family:"Instrument Sans","Segoe UI",s
 #carga{position:fixed;left:0;top:0;right:0;bottom:0;background:#0e0e0f;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:salir .4s 1.6s forwards}
 #carga.js{animation:none}
 @keyframes salir{to{opacity:0;visibility:hidden}}
-#carga .marca-c{font-size:96px;font-weight:500;letter-spacing:-3px;color:#fbf6df;line-height:1;overflow:hidden;padding:0 6px}
-#carga .letra{display:inline-block} #carga .letra.v{color:#ff5a3c}
-#carga .lema{color:#7d7d82;margin-top:14px;font-size:14px}
-#carga .barra{width:180px;height:2px;background:#26262a;margin-top:22px;border-radius:2px;overflow:hidden}
-#carga .barra i{display:block;height:2px;background:#fbf6df;transform:scaleX(0);transform-origin:0 50%}
 @media (max-width:760px){.hero h1{font-size:52px;letter-spacing:-1px}.buscar{flex-wrap:wrap;border-radius:22px}.buscar .ent{flex:1 1 100%;border-left:0;padding-left:0}}
+@font-face{font-family:"Instrument Sans";font-weight:400;font-display:swap;src:url(/static/instrument-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-weight:500;font-display:swap;src:url(/static/instrument-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-weight:600;font-display:swap;src:url(/static/instrument-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-weight:700;font-display:swap;src:url(/static/instrument-sans-latin-700-normal.woff2) format("woff2")}
+body,.btn,input[type=text],select,.tb{font-family:"Instrument Sans","Segoe UI",system-ui,Arial,sans-serif}
+#carga{animation:salir .4s 3.8s forwards}
+#carga .cubos-c{margin-bottom:10px}
+#carga .marca-c{font-size:88px;font-weight:500;letter-spacing:-2.5px;color:#fbf6df;line-height:1;padding:0 6px}
+em.v{font-style:normal;color:#ff5a3c}
+html{scroll-behavior:smooth} #tablero{scroll-margin-top:16px}
+.hero form{margin:0}
 @media print{.top,.tabs,.btn,.nav,.pie{display:none} body{background:#fff;color:#000}}
 """
 
@@ -122,16 +123,14 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38"><path d="M19 2 33 7v11c
 
 
 def pagina(titulo, cuerpo, activo="inicio"):
-    letras = "".join('<span class="letra%s">%s</span>' % (" v" if i >= 2 else "", c) for i, c in enumerate("ReVital"))
     return ("<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             "<title>%s · ReVital</title><style>%s</style></head><body>"
-            "<div id=\"carga\" aria-hidden=\"true\"><div class=\"marca-c\">%s</div><div class=\"lema\">una segunda vida segura para sistemas legacy</div>"
-            "<div class=\"barra\"><i></i></div></div>"
-            "<div class=\"top\"><div class=\"in\"><a class=\"marca\" href=\"/\">%s<div><b>ReVital</b><span>una segunda vida segura para sistemas legacy</span></div></a>"
-            "<div class=\"nav\"><a href=\"/\"%s>Inicio</a></div></div></div><div class=\"wrap\">%s</div>"
+            "<div id=\"carga\" aria-hidden=\"true\">%s<div class=\"marca-c\">Re<em class=\"v\">Vital</em></div></div>"
+            "<div class=\"top\"><div class=\"in\"><a class=\"marca\" href=\"/\">%s<div><b>Re<em class=\"v\">Vital</em></b><span>una segunda vida segura para sistemas legacy</span></div></a>"
+            "<div class=\"nav\"><a href=\"/\"%s>Análisis</a></div></div></div><div class=\"wrap\">%s</div>"
             "<div class=\"pie\">Panel local · solo este equipo (127.0.0.1) · sin conexión a internet · usar solo en sistemas propios o con autorización</div>"
             "<script src=\"/static/gsap.min.js\" defer></script><script src=\"/static/panel.js\" defer></script></body></html>"
-            % (e(titulo), CSS, letras, LOGO, ' class="act"' if activo == "inicio" else "", cuerpo))
+            % (e(titulo), CSS, cubos.carga(), LOGO, ' class="act"' if activo == "inicio" else "", cuerpo))
 
 def chip(nivel):
     fg, bg = COLOR.get(nivel, ("#8a8a8f", "#202023"))
@@ -159,8 +158,10 @@ def estado_chip(cumple, sin_datos=False):
 
 # ---------------------------------------------------------------- inicio
 def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
+    x = next((z for z in ents if z["slug"] == sel), ents[0]) if ents else None
     b = ['<div class="hero"><div class="llaves"><span>{</span><p>Una segunda vida para los sistemas que sostienen tu institución:<br>'
-         'conoce lo que tienen y ponlos a salvo.</p><span>}</span></div><h1>Revitaliza tu Sistema</h1>' + form_analisis() + "</div>"]
+         'conoce lo que tienen y ponlos a salvo.</p><span>}</span></div><h1><span>Re<em class="v">Vital</em>iza</span> <span>tu sistema</span></h1>' + form_analisis(bool(ents)) + "</div>"]
+    b.append('<div id="tablero"></div>')
     if mensaje:
         b.append('<div class="aviso bien anim">%s</div>' % e(mensaje))
     for t in list(trabajos)[:3]:
@@ -168,7 +169,7 @@ def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
         cls = "" if est == "en curso" else ("listo" if est == "listo" else "error")
         txt = {"en curso": "Analizando", "listo": "Listo", "error": "No se pudo analizar"}.get(est, est)
         extra = ('<div class="barra"><b></b></div>' if est == "en curso" else
-                 ('<a style="margin-left:10px" href="/?e=%s">Ver resultado →</a>' % e(t["slug"]) if est == "listo" else
+                 ('<a style="margin-left:10px" href="/?e=%s#tablero">Ver resultado →</a>' % e(t["slug"]) if est == "listo" else
                   '<details><summary class="mut peq">Ver detalle</summary><pre style="max-height:200px">%s</pre></details>' % e(t["log"][-1500:])))
         b.append('<div class="escaneo anim %s"><div class="punto"><i class="pulso"></i><i></i></div><div class="txt"><b>%s</b> '
                  '<span class="mut">%s · %s%s</span>%s</div></div>'
@@ -180,10 +181,9 @@ def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
         b.append('<div class="card anim" style="text-align:center"><h3>Todavía no hay análisis</h3><p class="mut">Escribe arriba la URL de un sitio o la carpeta '
                  'de una aplicación, o carga el caso de demostración (portal municipal ficticio).</p>'
                  '<form method="post" action="/demo"><button class="btn" type="submit">Cargar demostración</button></form></div>')
-        return pagina("Inicio", "".join(b), "inicio")
-    x = next((z for z in ents if z["slug"] == sel), ents[0])
-    b.append('<div class="pills anim">%s</div>' % "".join(
-        '<a class="pill%s" href="/?e=%s"><i class="pt %s"></i>%s%s</a>' % (" act" if z is x else "", e(z["slug"]),
+        return pagina("Análisis", "".join(b), "inicio")
+    b.append('<div class="pills anim" id="sistemas">%s</div>' % "".join(
+        '<a class="pill%s" href="/?e=%s#tablero"><i class="pt %s"></i>%s%s</a>' % (" act" if z is x else "", e(z["slug"]),
                                                                       "nd" if z["r"].get("sin_datos") else ("bien" if z["r"]["cumple"] else "mal"),
                                                                       e(z["entidad"]), ' <span class="nd-t">%s</span>' % ("SIN DATOS" if z["r"].get("sin_datos") else ("CUMPLE" if z["r"]["cumple"] else "NO CUMPLE")))
         for z in ents))
@@ -195,7 +195,7 @@ def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
     if r.get("sin_datos"):  # un fallo nunca se presenta como "cumple" ni con un tablero verde
         b.append('<div class="aviso mal anim"><b>SIN DATOS: no se pudo evaluar.</b> No se detecto ningun componente (el objetivo no respondio o no '
                  'se pudo leer). Esto <b>no</b> significa que este libre de vulnerabilidades. Revisa el detalle y vuelve a analizar.</div>')
-        return pagina("Inicio", "".join(b), "inicio")
+        return pagina("Análisis", "".join(b), "inicio")
     if h.get("sin_respuesta"):
         b.append('<div class="aviso mal anim"><b>Resultado incompleto:</b> %s no respondio. Los datos de ese objetivo faltan; no lo des por seguro.</div>'
                  % ", ".join("<code>%s</code>" % e(z.get("target", "")) for z in h["sin_respuesta"]))
@@ -206,12 +206,12 @@ def inicio(ents, alertas, estado_s, mensaje="", trabajos=(), sel=""):
             chip(z["nivel_txt"]), e(z["cve"]), e(z["producto"]), e(z["version"]), e(z.get("parche") or z.get("accion", ""))) for z in top)
         b.append('<h2>Qué parchear primero</h2><table class="anim"><tr><th>Prioridad</th><th>CVE</th><th>Componente</th><th>Cómo corregir</th></tr>%s</table>'
                  '<p><a href="/e/%s?tab=hallazgos">Ver todas las vulnerabilidades →</a></p>' % (filas, e(x["slug"])))
-    return pagina("Inicio", "".join(b), "inicio")
+    return pagina("Análisis", "".join(b), "inicio")
 
-def form_analisis():
+def form_analisis(hay_datos=True):
     lupa = ('<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="7.5" cy="7.5" r="6" fill="none" stroke="#cfcab4" stroke-width="1.700"/>'
             '<path d="m12 12 4.500 4.500" stroke="#cfcab4" stroke-width="1.700" stroke-linecap="round"/></svg>')
-    return ('<form class="buscar" method="post" action="/analizar">%s'
+    return ('<form id="analizar" class="buscar" method="post" action="/analizar">%s'
             '<input class="dest" type="text" name="destino" placeholder="URL del sitio (http://...) o carpeta de la aplicación (C:\\inetpub\\portal)" required>'
             '<input class="ent" type="text" name="entidad" placeholder="Institución (ej. MUNI-GT)" required>'
             '<input type="hidden" name="autorizo" value="1"><button class="btn" type="submit">Analizar<span class="kbd">Enter</span></button></form>'
@@ -263,7 +263,7 @@ def entidad(x, tab, alertas, hist, archivos, todos=False, filtro="", vigilada=Fa
     vig = ('<form class="vig" method="post" action="/vigilar"><input type="hidden" name="slug" value="%s"><input type="hidden" name="activar" value="%s">'
            '<button class="switch%s" type="submit" title="Vuelve a analizar este sistema cada hora y avisa si algo cambia"><i></i>%s</button></form>'
            % (e(x["slug"]), "0" if vigilada else "1", " on" if vigilada else "", "Vigilando cada hora" if vigilada else "Vigilar cada hora"))
-    cab = ('<p class="sub"><a href="/?e=%s">← Inicio</a></p><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">'
+    cab = ('<p class="sub"><a href="/?e=%s#tablero">← Análisis</a></p><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">'
            '<div><h1>%s</h1><p class="sub" style="margin:0">Evaluado el %s · catálogo CISA KEV %s · %d componentes analizados</p></div>'
            '<div>%s%s &nbsp; <a class="btn" href="/zip/%s">Descargar documentación (.zip)</a></div></div>'
            % (e(x["slug"]), e(x["entidad"]), e(h.get("fecha_evaluacion", "")), e(h.get("catalogos", {}).get("kev_version", "?")), r["componentes"],
