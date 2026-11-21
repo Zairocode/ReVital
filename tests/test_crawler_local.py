@@ -20,7 +20,9 @@ class H(BaseHTTPRequestHandler):
         if p == "/sitemap.xml":
             return self.send(200, "<urlset><url><loc>http://%s/oculta</loc></url></urlset>" % self.headers["Host"], ctype="application/xml")
         if p == "/oculta":
-            return self.send(200, "<title>Oculta</title>", {"Server": "Apache/2.0.52"})
+            return self.send(200, "<title>Oculta</title>", {"Server": "Apache/2.0.52 (Unix) PHP/5.2.17"})
+        if p == "/CHANGELOG.txt":
+            return self.send(200, "Drupal 7.57, 2018-02-21\n-----------------------\nDrupal 7.56, 2017-06-21\n", ctype="text/plain")
         if p == "/informe.pdf":
             return self.send(200, b"%PDF-1.4 /Producer (Acrobat Distiller 8.0.0)", ctype="application/pdf")
         if p == "/nada":                  # pagina de error con version
@@ -48,6 +50,7 @@ assert ("ASP Clasico", "") in prods, prods
 assert any(d.endswith("informe.pdf") for d in inv["extra"]["documentos"])
 assert any(p["url"].endswith("/oculta") for p in pages) and ("Apache", "2.0.52") in prods, "sitemap no usado"
 assert inv["extra"]["robots_disallow"] == ["/admin/"], inv["extra"]["robots_disallow"]
+assert ("Drupal", "7.57") in prods and ("PHP", "5.2.17") in prods, prods
 assert ("Acrobat Distiller", "8.0.0") in prods, "metadato de documento no leido"
 assert not any("jsessionid" in p["url"] for p in pages)
 print("ok", len(pages), "paginas")

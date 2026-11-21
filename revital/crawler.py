@@ -142,13 +142,41 @@ def split_ver(txt):
     return (m.group(1), m.group(2)) if m else (txt.strip(), "")
 
 
+def tokens_ver(txt):
+    """'Apache/2.4.49 (Unix) PHP/7.4' -> [('Apache','2.4.49'), ('PHP','7.4')]; sin tokens producto/version -> split_ver."""
+    t = re.findall(r"([A-Za-z][\w.\-]*)/(\d[\w.]*)", txt)
+    return t or [split_ver(txt)]
+
+
+# archivos que revelan la version exacta del CMS (el meta generator de Drupal 7 solo dice "Drupal 7")
+PROBES = (("/CHANGELOG.txt", r"(?m)^Drupal (\d+\.\d+)", "Drupal"),
+          ("/readme.html", r"Version (\d+\.\d+(?:\.\d+)?)", "WordPress"),
+          ("/administrator/manifests/files/joomla.xml", r"<version>([\d.]+)</version>", "Joomla"))
+
+
+def sondear(start, ctx, allowed, timeout):
+    """Pide los archivos de PROBES en la raiz. -> [(producto, version, fuente, donde)]"""
+    u = urlparse(start)
+    out = []
+    for ruta, rx, prod in PROBES:
+        url = "%s://%s%s" % (u.scheme, u.netloc, ruta)
+        try:
+            st, _, body, _ = fetch(url, ctx, allowed, timeout, retries=0)
+        except Exception:
+            continue
+        m = re.search(rx, body) if st == 200 else None
+        if m:
+            out.append((prod, m.group(1), "archivo " + ruta, url))
+    return out
+
+
 def detect_tech(url, headers, page, status=200, body=""):
     """Devuelve set de (producto, version, fuente)."""
     tech = set()
     low = {k.lower(): v for k, v in headers.items()}
     for h in TECH_HEADERS:
         if h in low:
-            tech.add(split_ver(low[h]) + ("header " + h,))
+            tech.update((prod, ver, "header " + h) for prod, ver in tokens_ver(low[h]))
     if "generator" in page.meta:
         tech.add(split_ver(page.meta["generator"]) + ("meta generator",))
     for s in page.scripts:
@@ -206,6 +234,8 @@ def crawl(start, max_pages=200, delay=0.5, insecure=False, entidad="", scope=(),
     print("Recorriendo %s | hosts permitidos: %s | solo con autorizacion" % (start, ", ".join(sorted(allowed))))
     seen, queue, pages, tech, docs, patrones = set(), deque([start]), [], {}, set(), Counter()
     urls_map, disallow = descubrir(start, ctx, allowed, timeout)
+    for prod, ver, fuente, donde in sondear(start, ctx, allowed, timeout):
+        tech.setdefault((prod, ver, fuente), donde)
     for l in urls_map + [urljoin(start, d) for d in disallow if not re.search(r"[*$?]", d)]:
         l = normalize(l)
         if urlparse(l).netloc.lower() in allowed:
@@ -302,6 +332,9 @@ def demo():  # python -m revital.crawler --demo : verifica el parser sin red
     z = io.BytesIO()
     zipfile.ZipFile(z, "w").writestr("docProps/app.xml", "<Application>Microsoft Office Word</Application><AppVersion>12.0000</AppVersion>")
     assert meta_documento(z.getvalue(), "a.docx") == [("Microsoft Office Word", "12.0000")]
+    h = detect_tech("http://h/", {"Server": "Apache/2.4.49 (Unix) PHP/7.4.33 OpenSSL/1.0.2k"}, Page())
+    assert {("Apache", "2.4.49", "header server"), ("PHP", "7.4.33", "header server"),
+            ("OpenSSL", "1.0.2k", "header server")} <= h, h
     assert normalize("HTTP://H/a;jsessionid=AB12?x=1&PHPSESSID=z#f") == "http://h/a?x=1"
     print("ok")
 
