@@ -2,15 +2,28 @@
 
 > Documento de contexto para los 6 integrantes. Léelo completo una vez; después úsalo como referencia.
 > Resumen visual de 1 hoja: [`ReVital-resumen-1-hoja.pdf`](ReVital-resumen-1-hoja.pdf).
-> Fuente de verdad técnica: el `README.md` y `revital/inventory.py` de `main`. Si este documento y el código no coinciden, manda el código y se corrige este archivo.
+> Fuente de verdad técnica: el `README.md` y `revital/inventory.py` de `main` (diseño de Zairocode) y el código de cada rama. Si este documento y el código no coinciden, manda el código y se corrige este archivo.
+> Alineado con: `main` @ `208bb33` y `crawler` @ `a173b0a` (21-nov-2026).
+> Lo marcado como **(propuesta)** no está decidido en el README; se valida con el equipo.
 
 ---
 
 ## 1. La idea en una frase
 
-**ReVital se suelta sobre una app, un servidor o una institución, documenta qué tecnología tiene (aunque sea vieja) y dice qué vulnerabilidades del catálogo CISA KEV hay que parchear primero.** Entrega un reporte `.md` por entidad con el inventario, los hallazgos priorizados y el estado de cumplimiento.
+**ReVital se suelta sobre una app, un servidor o una institución, documenta qué tecnología tiene (aunque sea vieja) y dice qué vulnerabilidades del catálogo CISA KEV hay que parchear primero.** Entrega un `.md`/`.txt` por entidad con el inventario, los hallazgos priorizados y el estado de cumplimiento.
 
 No toca, no reescribe y no reemplaza el sistema viejo: solo lo **mira** y lo **explica**.
+
+### Estado actual (21-nov, mañana)
+
+| Pieza | Rama | Archivo | Estado |
+|---|---|---|---|
+| Contrato común | `main` | `revital/inventory.py` | ✅ listo |
+| Colector web | `crawler` | `revital/crawler.py` + `tests/test_crawler_local.py` | ✅ funcionando, con pruebas que pasan |
+| Colector de red | `crawler` | `revital/red.py` | ⏳ por hacer |
+| Colector de código/carpeta | `directorios` | `revital/codigo.py` | ⏳ por hacer |
+| Colector de host Windows | `adaptaciones-windows` | `revital/host.py`, `scripts/` | ⏳ por hacer |
+| Evaluación KEV/NVD + reporte final | `reglas-cisa-cves` | `revital/cves/` | ⏳ por hacer |
 
 ---
 
@@ -75,7 +88,8 @@ flowchart TD
     H --> I
     I --> E[Evaluación<br/>componente → CVE vía NVD → ¿está en CISA KEV?<br/>rama reglas-cisa-cves]
     E --> P[Priorización]
-    P --> O[salida/reporte-ENTIDAD.md<br/>inventario + hallazgos priorizados + cumplimiento]
+    P --> O[salida/reporte-ENTIDAD.md<br/>REPORTE FINAL: inventario + hallazgos priorizados + cumplimiento]
+    W -.-> RW[salida/reporte-ENTIDAD-web.md<br/>reporte propio del colector web]
 ```
 
 Versión texto (por si el visor no muestra Mermaid):
@@ -92,10 +106,15 @@ Versión texto (por si el visor no muestra Mermaid):
         │
         ▼
  reporte por entidad: salida/reporte-<entidad>.md
+   inventario + hallazgos priorizados + cumplimiento
 ```
 
+**Dos niveles de reporte:**
+- **Por colector** (documentación de lo que vio ese colector). Hoy el crawler ya genera `salida/reporte-<entidad>-web.md` con componentes, documentos enlazados, páginas y formularios.
+- **Final por entidad** `salida/reporte-<entidad>.md`: lo genera la evaluación uniendo todos los inventarios y agregando los CVE/KEV priorizados.
+
 ### Restricciones de diseño (no se negocian)
-1. **Solo biblioteca estándar de Python 3.8+.** Nada de `pip install`. Razón: tiene que correr en el equipo viejo del cliente (Windows 7 incluido) donde no podemos instalar nada.
+1. **Solo biblioteca estándar de Python 3.8+.** Nada de `pip install`. Razón: tiene que correr en el equipo viejo del cliente (Windows 7 incluido) donde no podemos instalar nada. Ojo: **3.8 es la última versión de Python que instala en Windows 7**, así que el código no puede usar nada más nuevo que 3.8 (ej. nada de `match`, ni `str.removeprefix` de 3.9).
 2. **Offline.** Los catálogos KEV y NVD se descargan antes y viajan con la herramienta. En la demo no dependemos del Wi-Fi.
 3. **Solo lectura.** Ningún colector modifica el sistema analizado.
 4. **Solo contra sistemas propios o con autorización.** Esto se dice también en el pitch.
@@ -114,8 +133,10 @@ Está en `revital/inventory.py`. **Todo colector produce exactamente esto** y na
   "entidad": "MUNI-COBAN",
   "generado": "2026-11-21 10:30:00",
   "components": [
-    {"producto": "Microsoft-IIS", "version": "6.0", "fuente": "header Server", "donde": "https://app.interna.gob/"},
-    {"producto": "jquery",        "version": "1.4.2", "fuente": "script src", "donde": "/js/jquery-1.4.2.min.js"}
+    {"producto": "Microsoft-IIS",    "version": "6.0",    "fuente": "header server",      "donde": "https://app.interna.gob/"},
+    {"producto": "jquery",           "version": "1.4.2",  "fuente": "script",             "donde": "https://app.interna.gob/login.aspx"},
+    {"producto": "Apache Tomcat",    "version": "5.5.23", "fuente": "pagina de error",    "donde": "https://app.interna.gob/nada"},
+    {"producto": "ASP.NET WebForms", "version": "",       "fuente": "extension .aspx",    "donde": "https://app.interna.gob/login.aspx"}
   ],
   "extra": {}
 }
@@ -128,48 +149,64 @@ Está en `revital/inventory.py`. **Todo colector produce exactamente esto** y na
 
 Funciones disponibles: `nuevo(kind, target, entidad)`, `componente(producto, version, fuente, donde)`, `guardar(inv)` → `salida/inventario-<kind>.json`, `cargar_todos()` (lo usa la evaluación).
 
+> ⚠️ **Cuidado:** `guardar()` nombra el archivo solo por `kind`. Si se corren dos colectores del mismo tipo (ej. dos portales web) sobre la misma carpeta `salida/`, el segundo **sobrescribe** al primero. Mientras no se cambie el contrato: usar `--out` distinto por cada objetivo (ej. `--out salida/portal1`).
+
 **Regla:** si alguien necesita cambiar el contrato, el cambio va **primero a `main`** y se avisa al equipo.
 
 ---
 
 ## 7. Qué hace cada pieza
 
-### 7.1 Colector web — rama `crawler` (`revital/crawler.py`)
-Ya existe una primera versión. Recorre las páginas del mismo dominio y detecta tecnología por:
-- headers `Server`, `X-Powered-By`, `X-AspNet-Version`, `X-AspNetMvc-Version`;
-- `<meta name="generator">` (ej. `Joomla 1.5`);
-- nombre de los scripts (`jquery-1.4.2.min.js` → jquery 1.4.2);
-- extensión de las páginas (`.aspx` → ASP.NET WebForms, `.jsp`, `.php`, `.cfm`, `.do`…).
+### 7.1 Colector web — rama `crawler` (`revital/crawler.py`) — ✅ funcionando
+Ya usa el contrato común: produce `salida/inventario-web.json` con `components[]` (producto y versión separados) y además un reporte propio del colector, `salida/reporte-<entidad>-web.md`.
 
-También lista formularios y sus campos (útil para documentar la app). Tiene `--insecure` para servidores viejos con TLS 1.0 o certificados vencidos, y `--demo` como autoprueba sin red.
+**Recorre** las páginas del sitio (solo los hosts permitidos) y **detecta tecnología** por:
+- headers `Server`, `X-Powered-By`, `X-AspNet-Version`, `X-AspNetMvc-Version` (ej. `Microsoft-IIS` `6.0`);
+- `<meta name="generator">` (ej. `Joomla` `1.5`);
+- nombre de los scripts (`jquery-1.4.2.min.js` → `jquery` `1.4.2`);
+- extensión de las páginas (`.aspx`, `.asp`, `.jsp`, `.php`, `.cfm`, `.do`, `.action`);
+- cookies de sesión (`ASPSESSIONID` → ASP clásico, `JSESSIONID` → Java, `PHPSESSID` → PHP…);
+- rutas delatoras (`/WebResource.axd` → ASP.NET, `/wp-content/` → WordPress, `/_layouts/` → SharePoint…);
+- versiones filtradas en **comentarios HTML** y **páginas de error** (ej. `Apache Tomcat/5.5.23` en un 404).
 
-> ⚠️ **Pendiente de integración:** hoy el crawler guarda `salida/reporte.json` con `{start, pages[], tech[]}` (formato anterior). Hay que adaptarlo para que use `inventory.nuevo(...)`/`componente(...)` y escriba `inventario-web.json`, separando `producto` y `version` en lugar de cadenas como `"lib: jquery 1.4.2"`.
+Cada componente queda con su `fuente` (ej. `header server`, `cookie aspsessionid`, `pagina de error`) y `donde` (URL).
 
-### 7.2 Colector de red — rama `crawler` (`revital/red.py`)
-Recorre un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
+**Robustez para sitios legacy:**
+- **Scope:** no sigue enlaces ni redirecciones a hosts no autorizados (ni siquiera los contacta). Hosts extra con `--scope`.
+- **Anti-trampas:** limita URLs repetitivas tipo `/ver?id=1,2,3…` y quita ids de sesión de las URL para no recorrer la misma página mil veces.
+- **Reintentos** ante fallos de red; los errores HTTP 4xx/5xx se guardan (sirven como evidencia).
+- `--insecure` para TLS 1.0 / certificados vencidos o autofirmados.
+- `Ctrl+C` guarda lo recorrido hasta ese momento.
 
-### 7.3 Colector de código/carpeta — rama `directorios` (`revital/codigo.py`)
-Se apunta a la carpeta de una app legacy y lee archivos que declaran versiones:
+**En `extra`** guarda las páginas (estado, título, formularios y sus campos), los **documentos enlazados** (`.pdf`, `.doc`, `.xls`…) y los hosts permitidos: eso es la "documentación" de la app.
+
+**Pruebas:** `python -m revital.crawler --demo` (parser, sin red) y `python tests/test_crawler_local.py` (levanta un sitio legacy falso local con trampas, redirect externo y página de error).
+
+### 7.2 Colector de red — rama `crawler` (`revital/red.py`) — ⏳ por hacer
+Recorrerá un rango o lista de hosts de la institución y toma banners de servicios (versión de servidor web, etc.). Produce `inventario-red.json`.
+
+### 7.3 Colector de código/carpeta — rama `directorios` (`revital/codigo.py`) — ⏳ por hacer
+Se apuntará a la carpeta de una app legacy y lee archivos que declaran versiones:
 - `web.config` (versión de .NET Framework), DLLs y sus versiones;
 - `pom.xml` (dependencias Java: aquí aparecería, por ejemplo, un Log4j viejo);
 - `composer.json` (PHP), `package.json` (JS), etc.
 
 Produce `inventario-codigo.json`. Es el colector con la evidencia más precisa porque lee versiones declaradas, no adivinadas.
 
-### 7.4 Colector de host — rama `adaptaciones-windows` (`revital/host.py`, `scripts/`)
-Corre en el propio equipo/servidor Windows viejo: software instalado, versión de Windows/IIS, etc. Incluye un `.bat` para lanzarlo fácil y las adaptaciones para TLS y Python viejos. Produce `inventario-host.json`.
+### 7.4 Colector de host — rama `adaptaciones-windows` (`revital/host.py`, `scripts/`) — ⏳ por hacer
+Correrá en el propio equipo/servidor Windows viejo: software instalado, versión de Windows/IIS, etc. Incluye un `.bat` para lanzarlo fácil y las adaptaciones para TLS y Python viejos. Produce `inventario-host.json`.
 
-### 7.5 Evaluación y reporte — rama `reglas-cisa-cves` (`revital/cves/`)
+### 7.5 Evaluación y reporte — rama `reglas-cisa-cves` (`revital/cves/`) — ⏳ por hacer
 1. **Carga** todos los `inventario-*.json` con `cargar_todos()`.
 2. **Normaliza** cada `producto`+`version` a algo comparable (idealmente CPE).
 3. **Busca CVE** que afecten esa versión en la copia offline de NVD.
 4. **Marca** cuáles de esos CVE están en **CISA KEV** (explotados activamente).
-5. **Prioriza** (propuesta, a confirmar por quien lleve la rama):
+5. **Prioriza** — **(propuesta)**, a confirmar por quien lleve la rama:
    1. En KEV **y** `knownRansomwareCampaignUse = "Known"`;
    2. En KEV con `dueDate` ya vencida;
    3. En KEV;
    4. No está en KEV, ordenado por severidad CVSS.
-6. **Genera** `salida/reporte-<entidad>.md` con: inventario (con fuente y dónde), hallazgos priorizados (CVE, producto afectado, por qué es prioritario, `requiredAction` de CISA) y resumen de cumplimiento (cuántos KEV abiertos).
+6. **Genera** el reporte final `salida/reporte-<entidad>.md` (une lo de todos los colectores) con: inventario (con fuente y dónde), hallazgos priorizados (CVE, producto afectado, por qué es prioritario, `requiredAction` de CISA) y resumen de cumplimiento (cuántos KEV abiertos).
 
 > Nota honesta: el cruce producto→CVE es la parte más difícil (los nombres detectados no siempre coinciden con los de NVD). Para la demo conviene una **tabla de alias** pequeña y controlada para los productos de nuestra app de prueba.
 
@@ -188,21 +225,35 @@ Corre en el propio equipo/servidor Windows viejo: software instalado, versión d
 - Ramas cortas, **PR a `main`**, commits pequeños.
 - Cambios al contrato (`inventory.py`) primero a `main`.
 - Documentación compartida del equipo: carpeta `docs/` en la rama `directorios`.
+- Pruebas en `tests/` (sin pytest: se corren con `python tests/<archivo>.py`).
 
-### Uso esperado
+### Uso del colector web (lo que ya funciona)
 ```
 python -m revital.crawler https://app.interna.gob --insecure --entidad MUNI-COBAN
-python -m revital.crawler --demo        # autocomprobación sin red
+python -m revital.crawler --demo                 # autoprueba del parser, sin red
+python tests/test_crawler_local.py               # prueba contra un sitio legacy falso local
 ```
+
+| Opción | Para qué | Por defecto |
+|---|---|---|
+| `--entidad X` | Nombre de la institución (nombra el reporte) | vacío → `sin-entidad` |
+| `--out DIR` | Carpeta de salida | `salida` |
+| `--insecure` | Aceptar TLS 1.0 y certificados vencidos/autofirmados | apagado |
+| `--scope h1,h2` | Hosts extra permitidos además del de la URL | ninguno |
+| `--max N` | Máximo de páginas | 200 |
+| `--delay S` | Pausa entre páginas (no saturar el servidor viejo) | 0.5 s |
+| `--timeout S` | Tiempo máximo por petición | 15 s |
+
+Salida: `salida/inventario-web.json` + `salida/reporte-<entidad>-web.md`.
 
 ---
 
 ## 9. La demo (lo que verá el jurado)
 
-Regla del evento: **"se enseña lo que funciona"**. Guion sugerido (≈90 s):
+Regla del evento: **"se enseña lo que funciona"**. Guion sugerido **(propuesta)** (≈90 s):
 
 1. **Dolor (15 s):** "Esta es la app de una municipalidad: IIS/Apache viejo, sin documentación, nadie sabe qué tiene. ¿Qué parchean primero?"
-2. **Documentar (25 s):** corremos los colectores sobre la app legacy de prueba (en local, sin internet). Aparece el inventario: producto, versión, cómo lo supimos y dónde.
+2. **Documentar (25 s):** corremos los colectores sobre la app legacy de prueba (en local, sin internet). Aparece el inventario: producto, versión, cómo lo supimos y dónde, más páginas, formularios y documentos encontrados. *(Esta parte ya funciona con el crawler.)*
 3. **Priorizar (30 s):** la evaluación cruza contra CISA KEV. Mostramos el reporte: "de N componentes, estos 2 tienen vulnerabilidades que se están explotando hoy; esta es la acción requerida y la fecha límite de CISA".
 4. **Prueba de que no tocamos nada (10 s):** hash del sistema antes y después: idéntico.
 5. **Cierre (10 s):** "Esto es el paso 0 de cualquier transformación digital: no puedes modernizar lo que no sabes que tienes."
@@ -230,16 +281,18 @@ Regla del evento: **"se enseña lo que funciona"**. Guion sugerido (≈90 s):
 | Riesgo | Mitigación |
 |---|---|
 | El cruce producto→CVE no encuentra coincidencias | Tabla de alias controlada para la demo; probar temprano con la app de prueba |
-| Cada colector entrega un formato distinto | Contrato único en `inventory.py`; adaptar `crawler` (pendiente) |
+| Cada colector entrega un formato distinto | Contrato único en `inventory.py` (el crawler ya lo cumple; los demás deben copiar su patrón) |
+| Dos inventarios del mismo tipo se sobrescriben | `--out` distinto por objetivo, o ajustar el nombre en `guardar()` vía `main` |
+| Código que no corre en Windows 7 | Probar cada colector con Python 3.8 real antes de la demo |
 | Sin internet en la UVG | Catálogos offline, todo local |
 | Querer cubrir todo (4 colectores) y no cerrar ninguno | Prioridad: **web + código + evaluación + reporte** funcionando de punta a punta; red y host después |
 | Afirmar datos que no podemos sostener | En el pitch solo citamos cifras con fuente primaria verificada |
 
 ---
 
-## 12. Hoja de ruta (después del MVP)
+## 12. Hoja de ruta (después del MVP) — (propuesta)
 
-Esto viene de la idea "Escudo Legacy 3 Capas" que analizamos antes; **no es parte del MVP de hoy**:
+No está en el README del repo: son ideas que salieron del análisis previo ("Escudo Legacy 3 Capas") y sirven para responder "¿y después qué?" en el pitch. **No es parte del MVP de hoy** y se valida con el equipo:
 
 - **Fase 2 — Parche virtual:** un proxy delante del sistema viejo que bloquea el vector de ataque del CVE detectado, sin tocar el sistema (probado con exploit → `403` y uso normal → `200`).
 - **Fase 3 — Monitoreo y cumplimiento:** panel con intentos bloqueados por CVE, rollback y exportación de reporte de incidente.
