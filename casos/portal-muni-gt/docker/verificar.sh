@@ -11,8 +11,10 @@ pend() { echo "  [PEND]  $1"; pend=$((pend+1)); }
 echo "== Objetivo: $BASE =="
 
 echo "-- Capa 1 (deteccion de stack) --"
-server=$(curl -s -I "$BASE/" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}')
-echo "  Server (proxy): ${server:-<vacio>}"
+# En paginas normales el proxy deja pasar el header Server del BACKEND (2.4.10). Una URL mal formada
+# la contesta el propio proxy, y ahi si aparece su version real (2.4.49).
+server=$(curl -s -I --path-as-is "$BASE/%zz" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}')
+echo "  Server (proxy, via error 400): ${server:-<vacio>}"
 case "$server" in *2.4.49*) chk OK "Apache 2.4.49 detectado en el proxy";; *) chk FAIL "No se ve Apache 2.4.49 en el header Server";; esac
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/CHANGELOG.txt")
 if [ "$code" = "200" ] && curl -s "$BASE/CHANGELOG.txt" | grep -qi "Drupal 7.57"; then chk OK "Drupal 7.57 visible en /CHANGELOG.txt"; else pend "No se confirma Drupal 7.57 en /CHANGELOG.txt (codigo $code) -- puede faltar instalar Drupal"; fi

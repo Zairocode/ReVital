@@ -89,7 +89,7 @@ pero igual de real. El resto del caso no cambia.
 
 ```
 python -m revital.crawler http://localhost:8080 --entidad "Muni San Ejemplo"   # rama crawler
-python -m revital.codigo casos/portal-muni-gt/app --entidad "Muni San Ejemplo" # rama directorios
+python -m revital.codigo casos/portal-muni-gt/app --entidad "Muni San Ejemplo" # rama directorios (PENDIENTE: aun no existe)
 ```
 
 Resultado esperado: inventario de §2, hallazgos KEV de §3 y reporte por entidad en `salida/`.

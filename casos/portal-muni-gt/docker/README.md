@@ -1,8 +1,7 @@
 # Docker del objetivo de demo — Portal Muni (Drupal 7.57 + Apache 2.4.49)
 
-> ⚠️ **Sin verificar en Docker todavía.** Estos archivos se escribieron en una máquina sin Docker.
-> Están basados en configuraciones públicas conocidas (estilo vulhub), pero **hay que correrlos y
-> confirmarlos** con `verificar.sh`. Si algo falla, ver §Problemas comunes.
+> ✅ **Verificado en Docker (21-nov-2026):** levantan juntas `drupal:7.57`, `httpd:2.4.49` y `mariadb:10.5`.
+> El PoC de CVE-2021-41773 funciona por `/cgi-bin/`. Drupal hay que instalarlo una vez a mano (ver abajo).
 >
 > ⚠️ **Entorno deliberadamente vulnerable.** Correr solo en local/aislado. Nunca exponerlo a
 > internet ni apuntarlo a un sistema real del gobierno.
@@ -47,7 +46,7 @@ Drupal 7 no se autoinstala; hay que pasar por el asistente web **una vez**:
 ```bash
 bash verificar.sh
 ```
-Debe dar `Server: Apache/2.4.49` y leer `/etc/passwd` por el traversal en `/cgi-bin/`.
+Debe mostrar Apache 2.4.49 (el proxy lo revela ante una URL mal formada; en paginas normales el header `Server` es el del backend, 2.4.10) y leer `/etc/passwd` por el traversal en `/cgi-bin/`.
 **Nota de orden:** antes de instalar Drupal, `/` redirige a `install.php`; el script lo detecta y
 marca los chequeos de Drupalgeddon 2 y de QA como **PEND** (pendientes), no como falla. Después de
 instalar Drupal, esos deben pasar a `200`.
